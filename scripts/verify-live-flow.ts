@@ -4,12 +4,13 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from 'dotenv';
 import { createApp } from '../backend/src/app.js';
+import {generationConfig} from '../backend/src/ai/config.js';
 import { IDS } from '../backend/src/store.js';
 const root=fileURLToPath(new URL('../',import.meta.url));config({path:resolve(root,'.env'),quiet:true});
 const document=process.argv[2];if(!document)throw new Error('사용할 PDF/PPTX 경로를 인수로 주세요.');
 const count=Number(process.argv[3] || 5),start=Number(process.argv[4] || 2),end=Number(process.argv[5] || 15);
-const provider=process.env.AI_PROVIDER || 'codex';if(!['codex','openai','gemini'].includes(provider))throw new Error('잘못된 제공자');
-const service=createApp({root,dataDir:resolve(root,'.data'),demoAuth:true,provider:provider as 'codex'|'openai'|'gemini',codexBin:process.env.CODEX_BIN,model:provider==='codex'?process.env.CODEX_MODEL:provider==='openai'?process.env.OPENAI_MODEL:process.env.GEMINI_MODEL,apiKey:provider==='openai'?process.env.OPENAI_API_KEY:process.env.GEMINI_API_KEY});
+const settings=generationConfig(),provider=settings.provider;
+const service=createApp({root,dataDir:resolve(root,'.data'),demoAuth:true,...settings,jevApiKey:process.env.TYPESAFE_API_KEY,jevModel:process.env.JEV_MODEL});
 const base=`/api/courses/${IDS.course}/weeks/${IDS.week}`;
 const run=crypto.randomUUID();
 try {

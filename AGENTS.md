@@ -1,6 +1,6 @@
 # Campus LMS Agent 작업 지침
 
-이 저장소는 2026-10-31 마감의 4인 프로젝트다. 기획은 `docs/product.md`, 기술 기준은 `docs/architecture.md`, 우선순위는 GitHub 이슈에 있다. PDF/PPTX 퀴즈 첫 기능은 로컬에서 구현되어 있다. Q&A의 Jev 어댑터·추가 질문 1회·교수 답변도 로컬에서 구현했다. 실제 Jev 외부 호출, Supabase 연동·레포트는 아직 검증하지 않았다. 구현 현황은 docs/implementation.md를 따른다. 사용자가 명시한 최신 요구를 우선한다.
+이 저장소는 2026-10-31 마감의 4인 프로젝트다. 기획은 `docs/product.md`, 기술 기준은 `docs/architecture.md`, 우선순위는 GitHub 이슈에 있다. PDF/PPTX 퀴즈 첫 기능은 로컬에서 구현되어 있다. Q&A의 Jev 어댑터·추가 질문 1회·교수 답변도 로컬에서 구현했다. 실제 Claude·Jev 흐름도 소수 사례로 확인했다. Supabase 연동·레포트는 아직 검증하지 않았다. 구현 현황은 docs/implementation.md를 따른다. 사용자가 명시한 최신 요구를 우선한다.
 
 ## 시작과 인계
 
@@ -25,7 +25,7 @@
 - 원본 비공개와 AI 처리 허용은 별개다. 다른 강의 자료·개인 답안·대화는 조회할 수 없어야 한다.
 - 문서 페이지는 1부터, 전사 시간은 초 단위다. 출처와 주차를 보존한다. 구형 `.ppt` 변환은 별도 검토다.
 - 퀴즈 초안과 게시 문항을 구분한다. 제출 전 학생 응답에는 정답·해설을 포함하지 않는다. 채점은 서버가 수행한다.
-- Jev는 검색 후 질문 명확성과 근거 충분성을 판단한다. 생성 제공자는 현재 기본 로컬 Codex / 배포용 OpenAI API다. Gemini는 선택 가능한 이전 어댑터다. 서버가 추가 질문 1회 제한과 상태 전환을 수행한다.
+- Jev는 검색 후 질문 명확성과 근거 충분성을 판단한다. 생성 제공자는 사용자 요청에 따라 기본 Claude API다. 명시적 Codex 선택도 가능하며 OpenAI/Gemini는 이전 퀴즈 전용 어댑터다. 서버가 추가 질문 1회 제한과 상태 전환을 수행한다.
 - 학생 보완 답변 후에는 재검색·재판단한다. 여전히 모호하거나 근거가 부족하면 교수님에게 승격한다.
 - API 오류와 답변 근거 부족은 다르다. 오류는 별도 기록·재시도 경로로 처리한다. Jev 확률을 정답 확률로 설명하지 않는다.
 - 통계는 SQL/코드로 계산한다. 분모·재응시 규칙은 A의 첫 계약 PR에서 확정한다.
@@ -33,10 +33,10 @@
 ## 계약·재사용·검증
 
 - API: `docs/contracts/openapi.yaml` (JSON으로 작성한 유효 YAML). Worker: `docs/contracts/worker.schema.json`. 변경은 계약·샘플·사용처를 함께 갱신한다.
-- 현재 API 계약은 0.3.0-qa.1이며 Worker 큐 계약은 draft-1이다. 새 필드를 몰래 추가하거나 불일치를 타입 캐스팅으로 숨기지 않는다.
+- 현재 API 계약은 0.3.1-claude.1이며 Worker 큐 계약은 draft-1이다. 새 필드를 몰래 추가하거나 불일치를 타입 캐스팅으로 숨기지 않는다.
 - Quizify는 재사용 후보이며 아직 벤더링하지 않았다. 코드를 가져오면 해당 MIT 원문·저작권 고지를 유지하고 기준 커밋을 남긴다.
 - 비밀키·실제 학생 자료·로컬 개인 설정은 커밋하지 않는다. `.env.example`에는 키 이름만 둔다.
 - Node 24.13 이상·Python 3.9 이상. 앱 검증: `npm run typecheck`, `npm test`, `npm run build`, `npm run test:e2e`. Worker PDF 의존성: `worker/requirements.txt`. 실제 모델을 호출하는 검증은 `node --import tsx scripts/verify-live-flow.ts <자료 경로> [문항 수] [시작] [끝]`이며 계정 사용 한도에 영향을 준다.
-- 기본 `AI_PROVIDER=codex`는 로컬 개발 전용이다. 실제 배포 전 Supabase Auth/DB를 연결한다. CLI에 학생 입력을 셸 명령으로 전달하거나 위험 우회 플래그를 사용하지 않는다.
+- 현재 앱은 로컬 개발 전용이며 기본 `AI_PROVIDER=claude`는 Anthropic API 키가 필요하다. `AI_PROVIDER=codex`는 선택적인 로컬 로그인 모드다. 실제 배포 전 Supabase Auth/DB를 연결한다. CLI에 학생 입력을 셸 명령으로 전달하거나 위험 우회 플래그를 사용하지 않는다.
 - 계약 검증 명령: `python -m pip install -r requirements-contracts.txt`, `python scripts/check_contracts.py`.
 - 구현 PR에서는 해당 변경의 실행 명령과 실제 결과를 기록한다. 실행하지 않은 검사·모델 평가·배포를 완료라고 쓰지 않는다. 초기 계약 검증 통과를 앱 완성으로 취급하지 않는다.

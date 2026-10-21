@@ -5,7 +5,7 @@
 ## 통과한 검사
 
 - `npm run typecheck`: 백엔드·프런트엔드 TypeScript 검사 통과.
-- `npm test`: 서버 17개와 Python 문서 추출 2개 검사 통과.
+- `npm test`: 서버 22개와 Python 문서 추출 2개 검사 통과.
 - `npm run build`: Express 실행 파일과 Vite 정적 파일 생성 통과.
 - `scripts/check_contracts.py`: OpenAPI·Worker 샘플·학생 응답 정답 비노출·Figma SVG 체크섬 통과.
 - `npm audit --audit-level=high`: 확인 시점 알려진 취약점 0개.
@@ -31,9 +31,9 @@
 
 ## 남은 검증
 
-OpenAI API는 키 인증·모델 접근을 확인했지만 실제 생성은 잔액 부족(`credit_balance_exhausted`)으로 완료하지 못했다. Supabase·JWT·Storage·RLS, 실제 Jev 외부 판단, 레포트, 실제 서비스 배포는 아직 검증하지 않았다. 모델 출력 구조·출처 검증은 내용상 정답을 보증하지 않는다.
+OpenAI API는 키 인증·모델 접근을 확인했지만 실제 생성은 잔액 부족(`credit_balance_exhausted`)으로 완료하지 못했다. Supabase·JWT·Storage·RLS, 한국어 Jev 확대 평가, 레포트, 실제 서비스 배포는 아직 검증하지 않았다. 모델 출력 구조·출처 검증은 내용상 정답을 보증하지 않는다.
 
-## Q&A 검증
+## Q&A 초기 검증 (Claude 전환 전)
 
 같은 날 Q&A를 추가하고 TypeScript·빌드·계약 검사를 다시 수행했다. 서버 검사는 기존 5개와 Q&A 12개로 총 17개다. Python 추출 2개, Playwright 브라우저 2개(퀴즈·Q&A)가 통과했다.
 
@@ -45,4 +45,28 @@ OpenAI API는 키 인증·모델 접근을 확인했지만 실제 생성은 잔�
 
 실제 강의 PDF를 대상으로 로컬 검색 결과 6개를 전달하여 **실제 Codex CLI**로 381자 답변과 27자 보완 질문 문장을 생성했다. 답변 출처는 물리 페이지 7·8이었고 검색 근거와 일치했다. 이 검증은 Jev 판단을 호출하지 않고 생성 모듈을 직접 확인했다. 원본 문서와 생성한 본문은 커밋하지 않았다.
 
-로컬 실행 서버의 `/api/health`는 `contract_version=0.3.0-qa.1`, `provider=codex`, `jev_configured=false`, `qa_configured=false`를 반환했다. 실제 TypeSafe 키가 없어 전체 실제 Q&A 모델 연결과 한국어 판단 정확도·임계값은 검증하지 못했다. `jev-1.13.0`과 0.75 임계값을 검증 완료값으로 해석하지 않는다.
+초기 연결 당시 로컬 실행 서버의 `/api/health`는 `contract_version=0.3.0-qa.1`, `provider=codex`, `jev_configured=false`, `qa_configured=false`를 반환했다. 당시에는 TypeSafe 키가 없어 전체 실제 Q&A 모델 연결을 검증하지 못했다. 이후 실제 연결 결과는 아래에 기록한다. 한국어 판단 정확도·임계값은 확대 평가가 필요하다. `jev-1.13.0`과 0.75 임계값을 검증 완료값으로 해석하지 않는다.
+
+## Claude API·실제 Jev 연결 검증
+
+2026-10-21 사용자 요청으로 기본 생성을 `claude-sonnet-5-5`로 전환했다. API 계약은 `0.3.1-claude.1`이다. 다음 검증에서 Claude와 Jev는 테스트 대역이 아닌 실제 외부 API다.
+
+### 실제 퀴즈
+
+`node --import tsx scripts/verify-live-flow.ts <실제 강의 PDF> 3 2 15`로 물리 페이지 2~15를 추출하고 Claude가 **3문항 생성**, 교수 **3개 게시**, 학생 답안 **1정답·2오답**과 풀이를 확인했다. 제출 전 정답 비노출도 검사했다. Claude로 50문항을 호출한 결과는 아니며 앞의 50문항은 이전 Codex 결과다.
+
+### 실제 Q&A
+
+`node --import tsx scripts/verify-live-qa.ts`는 등록된 실제 강의 자료를 읽고 임시 DB에서 실제 Jev·Claude·HTTP 라우트를 사용했다.
+
+- IDF 의미 질문: `resolved`, 보완 질문 0회, 강의 **8페이지** 출처 답변.
+- 모호한 질문: 보완 질문 **1회**, 여전히 모호한 학생 답변 후 `awaiting_professor`·`unclear_after_clarification`, 교수 직접 답변 후 `resolved`.
+- 자료 밖의 화성 기온 질문: `awaiting_professor`·`judgment_uncertain`, 보완 질문 0회. 이 경로는 판단 불확실 승격이다. 이를 근거 부족 분기의 성공이나 명확성 판단 정확도로 해석하지 않는다.
+
+메타데이터만 `.data/live-qa-verification.json`에 남겼고 임시 DB는 삭제했다. 원문·대화·생성 본문·비밀키는 검증 로그나 커밋에 포함하지 않았다. 실제 한국어 사례 3개의 분기 확인이며 통계적 정확도나 임계값 보정 완료를 뜻하지 않는다.
+
+### 자동 검사·실행 설정
+
+기존 검사와 Claude SDK 검사를 합쳐 서버 **22개**, Python **2개**, Playwright **2개**, TypeScript·빌드·계약 검사가 통과했다. Claude SDK 검사는 구조화 출력, 범위 밖 출처, 잘린 응답·거절, 키 누락·인증·한도 오류, 원문 비노출·자동 재시도 금지를 HTTP 테스트 대역으로 확인했다. 브라우저 자동 검사 역시 테스트 대역이며 실제 모델 검증과 구분한다.
+
+실행 중인 로컬 서버를 다시 시작하여 `/api/health`의 `provider=claude`, `model=claude-sonnet-5-5`, `qa_configured=true`, `jev_configured=true`를 확인했다. 키 존재만으로 잔액을 검증하는 API는 아니며 앞의 실제 호출 결과로 연결을 확인했다.

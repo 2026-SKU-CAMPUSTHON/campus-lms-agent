@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Campus LMS Agent API",
-    "version": "0.3.0-qa.1",
-    "description": "로컬 퀴즈 및 Q&A 구현 계약. x-implementation-status=implemented는 제공하는 API, planned는 후속 작업이다. Q&A는 주차 자료 검색 후 Jev 판단, Codex 문장 생성, 추가 질문 1회와 교수 승격을 수행한다. 실제 Jev 키 없는 경우 오류·재시도로 남기며 다른 모델 판단으로 자동 대체하지 않는다. Supabase 배포는 미구현이다."
+    "version": "0.3.1-claude.1",
+    "description": "로컬 퀴즈 및 Q&A 구현 계약. x-implementation-status=implemented는 제공하는 API, planned는 후속 작업이다. Q&A는 주차 자료 검색 후 Jev 판단, Claude API 또는 명시적으로 선택한 Codex 문장 생성, 추가 질문 1회와 교수 승격을 수행한다. 실제 Jev 키 없는 경우 오류·재시도로 남기며 다른 모델 판단으로 자동 대체하지 않는다. Supabase 배포는 미구현이다."
   },
   "servers": [
     {
@@ -2354,6 +2354,7 @@
           "provider": {
             "type": "string",
             "enum": [
+              "claude",
               "codex",
               "openai",
               "gemini"

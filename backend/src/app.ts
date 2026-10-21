@@ -11,16 +11,19 @@ import { createGeminiGenerator } from './quiz-generation/gemini.js';
 import { generateAcrossRange, type Generator } from './quiz-generation/questions.js';
 import { codexReady, createCodexGenerator } from './quiz-generation/codex.js';
 import { createOpenAIGenerator } from './quiz-generation/openai.js';
+import {createClaudeGenerator} from './quiz-generation/claude.js';
+import {DEFAULT_CLAUDE_MODEL} from './ai/claude-json.js';
+import type {Provider} from './ai/config.js';
 import {QAService} from './qa/service.js';
 import {mountQA} from './qa/routes.js';
 import {createJevJudge} from './qa/jev.js';
-import {createQACodexGenerator} from './qa/generate.js';
+import {createQACodexGenerator,createQAClaudeGenerator} from './qa/generate.js';
 import type {Judge,QAGenerator} from './qa/types.js';
 import type { AttemptResult, Course, DraftQuestion, Job, Material, PublicQuiz, QuizDraft, Role, User, Week, WeekContent } from './types.js';
 
 interface Row { id:string; course_id:string; week_id:string; data:string; draft_id?:string }
 interface AuthedRequest extends Request { user:User }
-export interface AppOptions { root:string; dataDir:string; demoAuth:boolean; apiKey?:string; model?:string; provider?:'codex'|'openai'|'gemini'; codexBin?:string; generator?:Generator; jevApiKey?:string; jevModel?:string; jevMinimum?:number; qaJudge?:Judge; qaGenerator?:QAGenerator; frontendDir?:string }
+export interface AppOptions { root:string; dataDir:string; demoAuth:boolean; apiKey?:string; model?:string; provider?:Provider; codexBin?:string; generator?:Generator; jevApiKey?:string; jevModel?:string; jevMinimum?:number; qaJudge?:Judge; qaGenerator?:QAGenerator; frontendDir?:string }
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 const parse=<T>(row:{data:string}):T=>JSON.parse(row.data) as T;
 const uuid=z.string().uuid();
@@ -35,12 +38,12 @@ export function createApp(options:AppOptions) {
   mkdirSync(options.dataDir,{recursive:true});
   const store=new Store(resolve(options.dataDir,'campus.sqlite'));
   const app=express();
-  const provider=options.provider || 'openai';
-  const model=options.model || (provider==='codex'?'Codex 기본 모델':provider==='openai'?'gpt-6.1-sol':'gemini-3.8-flash');
+  const provider=options.provider || 'claude';
+  const model=options.model || (provider==='claude'?DEFAULT_CLAUDE_MODEL:provider==='codex'?'Codex 기본 모델':provider==='openai'?'gpt-6.1-sol':'gemini-3.8-flash');
   const ready=Boolean(options.generator) || (provider==='codex'?codexReady(options.codexBin):Boolean(options.apiKey));
-  const generate=options.generator ?? (provider==='codex'?createCodexGenerator(options.codexBin,options.model):provider==='openai'?createOpenAIGenerator(options.apiKey,model):createGeminiGenerator(options.apiKey,model));
-  const qa=new QAService(store,options.qaJudge ?? createJevJudge(options.jevApiKey,options.jevModel),options.qaGenerator ?? createQACodexGenerator({binary:options.codexBin,model:provider==='codex'?options.model:undefined}),options.jevMinimum);
-  const qaReady=Boolean(options.qaJudge || options.jevApiKey) && Boolean(options.qaGenerator || (provider==='codex'&&ready));
+  const generate=options.generator ?? (provider==='claude'?createClaudeGenerator({apiKey:options.apiKey,model}):provider==='codex'?createCodexGenerator(options.codexBin,options.model):provider==='openai'?createOpenAIGenerator(options.apiKey,model):createGeminiGenerator(options.apiKey,model));
+  const qa=new QAService(store,options.qaJudge ?? createJevJudge(options.jevApiKey,options.jevModel),options.qaGenerator ?? (provider==='claude'?createQAClaudeGenerator({apiKey:options.apiKey,model}):provider==='codex'?createQACodexGenerator({binary:options.codexBin,model:options.model}):async()=>{throw new HttpError(503,'QA_PROVIDER_UNSUPPORTED','Q&A 생성은 Claude 또는 Codex 제공자로 설정해 주세요.',true)}),options.jevMinimum);
+  const qaReady=Boolean(options.qaJudge || options.jevApiKey) && Boolean(options.qaGenerator || (['claude','codex'].includes(provider)&&ready));
   const active=new Set<Promise<void>>();
   const upload=multer({storage:multer.memoryStorage(),limits:{fileSize:20*1024*1024,files:1,fields:8,parts:9},fileFilter:(_req,file,cb)=>cb(null,/\.(pptx|pdf)$/i.test(file.originalname))});
   // 이전 프로세스에서 끊긴 작업을 성공이나 무한 대기로 남기지 않는다.
@@ -69,7 +72,7 @@ export function createApp(options:AppOptions) {
     next();
   });
   app.use(express.json({limit:'128kb'}));
-  app.get('/api/health',(_req,res)=>res.json({status:'ok',mode:'local-development',ai_configured:ready,provider,model,contract_version:'0.3.0-qa.1',qa_configured:qaReady,jev_configured:Boolean(options.jevApiKey || options.qaJudge),jev_model:options.jevModel || 'jev-1.13.0'}));
+  app.get('/api/health',(_req,res)=>res.json({status:'ok',mode:'local-development',ai_configured:ready,provider,model,contract_version:'0.3.1-claude.1',qa_configured:qaReady,jev_configured:Boolean(options.jevApiKey || options.qaJudge),jev_model:options.jevModel || 'jev-1.13.0'}));
   app.get('/api/dev/accounts',(_req,res)=>res.json(store.all<{user_id:string;name:string}>('SELECT id AS user_id,name FROM users WHERE id != ?',IDS.outsider)));
   app.post('/api/dev/login',(req,res)=> {
     const id=z.object({user_id:uuid}).strict().parse(req.body).user_id;

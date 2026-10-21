@@ -7,7 +7,7 @@ export interface CodexOptions {binary?:string;model?:string}
 function cliEnvironment() {
   const env={...process.env};
   // ChatGPT 로컬 로그인을 사용한다. 앱의 API 키를 CLI 자식 프로세스에 넘기지 않는다.
-  for(const key of ['OPENAI_API_KEY','CODEX_API_KEY','GEMINI_API_KEY','TYPESAFE_API_KEY','SUPABASE_SERVICE_ROLE_KEY'])delete env[key];
+  for(const key of ['ANTHROPIC_API_KEY','OPENAI_API_KEY','CODEX_API_KEY','GEMINI_API_KEY','TYPESAFE_API_KEY','SUPABASE_SERVICE_ROLE_KEY'])delete env[key];
   return env;
 }
 export function codexReady(binary='codex') {return spawnSync(binary,['login','status'],{timeout:5000,encoding:'utf8',env:cliEnvironment()}).status===0}
