@@ -1,0 +1,34 @@
+{
+  "attempt_id": "00000000-0000-4000-8000-000000000007",
+  "quiz_id": "00000000-0000-4000-8000-000000000005",
+  "correct_count": 0,
+  "total_count": 1,
+  "wrong_questions": [
+    {
+      "question_id": "00000000-0000-4000-8000-000000000006",
+      "prompt": "정규화의 주요 목적은?",
+      "options": [
+        {
+          "option_id": "a",
+          "text": "중복 감소"
+        },
+        {
+          "option_id": "b",
+          "text": "중복 증가"
+        }
+      ],
+      "correct_option_id": "a",
+      "explanation": "정규화는 데이터 중복과 갱신 이상을 줄인다.",
+      "sources": [
+        {
+          "material_id": "00000000-0000-4000-8000-000000000004",
+          "chunk_id": "00000000-0000-4000-8000-000000000099",
+          "source_type": "document",
+          "slide_no": 2,
+          "start_sec": null,
+          "end_sec": null
+        }
+      ]
+    }
+  ]
+}

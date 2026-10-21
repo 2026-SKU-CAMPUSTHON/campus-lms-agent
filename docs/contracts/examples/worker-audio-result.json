@@ -1,0 +1,18 @@
+{
+  "contract_version": "draft-1",
+  "kind": "ingestion.result",
+  "job_id": "00000000-0000-4000-8000-000000000001",
+  "course_id": "00000000-0000-4000-8000-000000000002",
+  "week_id": "00000000-0000-4000-8000-000000000003",
+  "material_id": "00000000-0000-4000-8000-000000000004",
+  "status": "completed",
+  "segments": [
+    {
+      "text": "이제 정규화를 설명합니다.",
+      "slide_no": null,
+      "start_sec": 10,
+      "end_sec": 15
+    }
+  ],
+  "error": null
+}

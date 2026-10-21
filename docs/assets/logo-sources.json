@@ -1,0 +1,62 @@
+[
+  {
+    "slug": "react",
+    "ok": true,
+    "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/react.svg"
+  },
+  {
+    "slug": "typescript",
+    "ok": true,
+    "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/typescript.svg"
+  },
+  {
+    "slug": "vite",
+    "ok": true,
+    "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/vite.svg"
+  },
+  {
+    "slug": "nodedotjs",
+    "ok": true,
+    "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/nodedotjs.svg"
+  },
+  {
+    "slug": "express",
+    "ok": true,
+    "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/express.svg"
+  },
+  {
+    "slug": "supabase",
+    "ok": true,
+    "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/supabase.svg"
+  },
+  {
+    "slug": "postgresql",
+    "ok": true,
+    "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/postgresql.svg"
+  },
+  {
+    "slug": "python",
+    "ok": true,
+    "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/python.svg"
+  },
+  {
+    "slug": "googlegemini",
+    "ok": true,
+    "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/googlegemini.svg"
+  },
+  {
+    "slug": "langchain",
+    "ok": true,
+    "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/langchain.svg"
+  },
+  {
+    "slug": "docker",
+    "ok": true,
+    "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/docker.svg"
+  },
+  {
+    "slug": "github",
+    "ok": true,
+    "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/github.svg"
+  }
+]

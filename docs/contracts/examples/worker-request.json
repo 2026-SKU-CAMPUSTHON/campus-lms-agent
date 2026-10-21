@@ -1,0 +1,17 @@
+{
+  "contract_version": "draft-1",
+  "kind": "ingestion.request",
+  "job_id": "00000000-0000-4000-8000-000000000001",
+  "course_id": "00000000-0000-4000-8000-000000000002",
+  "week_id": "00000000-0000-4000-8000-000000000003",
+  "material_id": "00000000-0000-4000-8000-000000000004",
+  "source_type": "document",
+  "storage": {
+    "bucket": "course-materials",
+    "object_key": "sample/week-1/material.pptx"
+  },
+  "page_range": {
+    "start": 2,
+    "end": 4
+  }
+}

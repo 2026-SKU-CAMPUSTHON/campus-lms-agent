@@ -1,0 +1,15 @@
+{
+  "contract_version": "draft-1",
+  "kind": "ingestion.result",
+  "job_id": "00000000-0000-4000-8000-000000000001",
+  "course_id": "00000000-0000-4000-8000-000000000002",
+  "week_id": "00000000-0000-4000-8000-000000000003",
+  "material_id": "00000000-0000-4000-8000-000000000004",
+  "status": "failed",
+  "segments": [],
+  "error": {
+    "code": "EXTRACTION_FAILED",
+    "message": "샘플 실패",
+    "retryable": true
+  }
+}
