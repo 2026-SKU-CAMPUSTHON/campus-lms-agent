@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Campus LMS Agent API",
-    "version": "0.2.0-quiz.1",
-    "description": "PPTX/PDF 첫 기능 구현 계약. x-implementation-status=implemented는 로컬 개발 서버에서 제공하며 planned는 후속 구현이다. 로컬 인증은 HttpOnly 세션 쿠키이며 실제 Supabase JWT/DB 배포는 미구현이다."
+    "version": "0.3.0-qa.1",
+    "description": "로컬 퀴즈 및 Q&A 구현 계약. x-implementation-status=implemented는 제공하는 API, planned는 후속 작업이다. Q&A는 주차 자료 검색 후 Jev 판단, Codex 문장 생성, 추가 질문 1회와 교수 승격을 수행한다. 실제 Jev 키 없는 경우 오류·재시도로 남기며 다른 모델 판단으로 자동 대체하지 않는다. Supabase 배포는 미구현이다."
   },
   "servers": [
     {
@@ -733,7 +733,7 @@
     "/courses/{course_id}/weeks/{week_id}/threads": {
       "post": {
         "operationId": "createThread",
-        "description": "로그인 학생의 질문 스레드를 만들고 처리를 큐에 넣는다. GET으로 결과를 조회한다.",
+        "description": "강의 학생 전용. 질문을 저장하고 비동기 처리한다. GET으로 상태를 조회한다. Jev 연결/호출 실패는 state=open, processing_status=failed로 남기며 교수 승격으로 오인하지 않는다. 전체 진행 Q&A가 3개 이상이면 429다.",
         "responses": {
           "201": {
             "description": "성공",
@@ -794,7 +794,8 @@
                 "properties": {
                   "text": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "maxLength": 4000
                   }
                 },
                 "required": [
@@ -805,7 +806,67 @@
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "localSession": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "listThreads",
+        "description": "선택 주차의 최신 100개. 학생은 본인 질문만, 교수는 해당 강의 학생 질문을 조회한다. 내부 판단 로그·원문 검색 청크는 포함하지 않는다.",
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "localSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "week_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Thread"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/threads/{thread_id}": {
@@ -845,13 +906,18 @@
             }
           }
         ],
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "localSession": []
+          }
+        ]
       }
     },
     "/threads/{thread_id}/messages": {
       "post": {
         "operationId": "replyToThread",
-        "description": "작성자 역할은 서버가 결정한다. awaiting_student의 학생 보완 답변은 재검색·재판단한다. awaiting_professor의 교수 답변은 resolved로 전환한다. 상태·버전 충돌은 409, 잘못된 상태 제출은 422다. 명확하지만 근거 부족이면 교수에게 승격한다. 추가 질문 최대 1회는 트랜잭션으로 보장한다.",
+        "description": "학생은 awaiting_student에서 보완 답변 1개를 보낼 수 있다. 교수는 awaiting_professor에서 답변해 resolved로 전환한다. 재검색·재판단 후에도 미해결이면 승격하며 추가 질문 총횟수는 1을 넘지 않는다. expected_version 불일치·진행 중은 409, 상태 불일치는 422다. 작성자 역할은 서버가 확인한다. 같은 키·본문은 이전 응답을 반환한다.",
         "responses": {
           "202": {
             "description": "성공",
@@ -869,6 +935,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "교수 답변 완료",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Thread"
                 }
               }
             }
@@ -903,18 +979,29 @@
                 "properties": {
                   "text": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "maxLength": 4000
+                  },
+                  "expected_version": {
+                    "type": "integer",
+                    "minimum": 1
                   }
                 },
                 "required": [
-                  "text"
+                  "text",
+                  "expected_version"
                 ],
                 "additionalProperties": false
               }
             }
           }
         },
-        "x-implementation-status": "planned"
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "localSession": []
+          }
+        ]
       }
     },
     "/courses/{course_id}/reports/quizzes": {
@@ -1316,6 +1403,129 @@
             }
           }
         ]
+      }
+    },
+    "/threads/{thread_id}/retry": {
+      "post": {
+        "operationId": "retryQA",
+        "description": "연결·생성 실패 상태에서 명시적으로 재시도한다. 오류를 추가 질문이나 교수 승격으로 바꾸지 않는다. 기존 추가 질문 횟수와 대화를 보존한다. 자동 재시도는 없다.",
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "localSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Thread"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expected_version": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "expected_version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/threads/{thread_id}/decisions": {
+      "get": {
+        "operationId": "getQADecisions",
+        "description": "해당 강의 교수 전용. Jev 버전·두 판단·확률·참조 근거 ID·서버 선택 경로를 반환한다.",
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "localSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DecisionRecord"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -1744,6 +1954,10 @@
             "items": {
               "$ref": "#/components/schemas/Source"
             }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "required": [
@@ -1751,7 +1965,8 @@
           "author_role",
           "kind",
           "text",
-          "sources"
+          "sources",
+          "created_at"
         ],
         "additionalProperties": false
       },
@@ -1797,6 +2012,32 @@
           },
           "error": {
             "$ref": "#/components/schemas/NullableError"
+          },
+          "student_name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "handoff_reason": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "unclear_after_clarification",
+              "insufficient_evidence",
+              "judgment_uncertain",
+              "answer_not_grounded",
+              null
+            ]
           }
         },
         "required": [
@@ -1806,7 +2047,12 @@
           "clarification_count",
           "processing_status",
           "messages",
-          "error"
+          "error",
+          "student_name",
+          "version",
+          "created_at",
+          "updated_at",
+          "handoff_reason"
         ],
         "additionalProperties": false
       },
@@ -2118,6 +2364,15 @@
           },
           "contract_version": {
             "type": "string"
+          },
+          "qa_configured": {
+            "type": "boolean"
+          },
+          "jev_configured": {
+            "type": "boolean"
+          },
+          "jev_model": {
+            "type": "string"
           }
         },
         "required": [
@@ -2126,7 +2381,149 @@
           "ai_configured",
           "provider",
           "model",
-          "contract_version"
+          "contract_version",
+          "qa_configured",
+          "jev_configured",
+          "jev_model"
+        ],
+        "additionalProperties": false
+      },
+      "Judgment": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string"
+          },
+          "clarity": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "enum": [
+                  "clear",
+                  "unclear"
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "probabilities": {
+                "type": "object",
+                "properties": {
+                  "clear": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "unclear": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "required": [
+                  "clear",
+                  "unclear"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "label",
+              "confidence",
+              "probabilities"
+            ],
+            "additionalProperties": false
+          },
+          "evidence": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "enum": [
+                  "sufficient",
+                  "insufficient"
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "probabilities": {
+                "type": "object",
+                "properties": {
+                  "sufficient": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "insufficient": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "required": [
+                  "sufficient",
+                  "insufficient"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "label",
+              "confidence",
+              "probabilities"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "model",
+          "clarity",
+          "evidence"
+        ],
+        "additionalProperties": false
+      },
+      "DecisionRecord": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "decision": {
+            "$ref": "#/components/schemas/Judgment"
+          },
+          "source_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "route": {
+            "type": "string",
+            "enum": [
+              "answer",
+              "clarify",
+              "handoff"
+            ]
+          }
+        },
+        "required": [
+          "at",
+          "attempt",
+          "decision",
+          "source_ids",
+          "route"
         ],
         "additionalProperties": false
       }

@@ -11,11 +11,16 @@ import { createGeminiGenerator } from './quiz-generation/gemini.js';
 import { generateAcrossRange, type Generator } from './quiz-generation/questions.js';
 import { codexReady, createCodexGenerator } from './quiz-generation/codex.js';
 import { createOpenAIGenerator } from './quiz-generation/openai.js';
+import {QAService} from './qa/service.js';
+import {mountQA} from './qa/routes.js';
+import {createJevJudge} from './qa/jev.js';
+import {createQACodexGenerator} from './qa/generate.js';
+import type {Judge,QAGenerator} from './qa/types.js';
 import type { AttemptResult, Course, DraftQuestion, Job, Material, PublicQuiz, QuizDraft, Role, User, Week, WeekContent } from './types.js';
 
 interface Row { id:string; course_id:string; week_id:string; data:string; draft_id?:string }
 interface AuthedRequest extends Request { user:User }
-export interface AppOptions { root:string; dataDir:string; demoAuth:boolean; apiKey?:string; model?:string; provider?:'codex'|'openai'|'gemini'; codexBin?:string; generator?:Generator; frontendDir?:string }
+export interface AppOptions { root:string; dataDir:string; demoAuth:boolean; apiKey?:string; model?:string; provider?:'codex'|'openai'|'gemini'; codexBin?:string; generator?:Generator; jevApiKey?:string; jevModel?:string; jevMinimum?:number; qaJudge?:Judge; qaGenerator?:QAGenerator; frontendDir?:string }
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 const parse=<T>(row:{data:string}):T=>JSON.parse(row.data) as T;
 const uuid=z.string().uuid();
@@ -34,6 +39,8 @@ export function createApp(options:AppOptions) {
   const model=options.model || (provider==='codex'?'Codex 기본 모델':provider==='openai'?'gpt-6.1-sol':'gemini-3.8-flash');
   const ready=Boolean(options.generator) || (provider==='codex'?codexReady(options.codexBin):Boolean(options.apiKey));
   const generate=options.generator ?? (provider==='codex'?createCodexGenerator(options.codexBin,options.model):provider==='openai'?createOpenAIGenerator(options.apiKey,model):createGeminiGenerator(options.apiKey,model));
+  const qa=new QAService(store,options.qaJudge ?? createJevJudge(options.jevApiKey,options.jevModel),options.qaGenerator ?? createQACodexGenerator({binary:options.codexBin,model:provider==='codex'?options.model:undefined}),options.jevMinimum);
+  const qaReady=Boolean(options.qaJudge || options.jevApiKey) && Boolean(options.qaGenerator || (provider==='codex'&&ready));
   const active=new Set<Promise<void>>();
   const upload=multer({storage:multer.memoryStorage(),limits:{fileSize:20*1024*1024,files:1,fields:8,parts:9},fileFilter:(_req,file,cb)=>cb(null,/\.(pptx|pdf)$/i.test(file.originalname))});
   // 이전 프로세스에서 끊긴 작업을 성공이나 무한 대기로 남기지 않는다.
@@ -62,7 +69,7 @@ export function createApp(options:AppOptions) {
     next();
   });
   app.use(express.json({limit:'128kb'}));
-  app.get('/api/health',(_req,res)=>res.json({status:'ok',mode:'local-development',ai_configured:ready,provider,model,contract_version:'0.2.0-quiz.1'}));
+  app.get('/api/health',(_req,res)=>res.json({status:'ok',mode:'local-development',ai_configured:ready,provider,model,contract_version:'0.3.0-qa.1',qa_configured:qaReady,jev_configured:Boolean(options.jevApiKey || options.qaJudge),jev_model:options.jevModel || 'jev-1.13.0'}));
   app.get('/api/dev/accounts',(_req,res)=>res.json(store.all<{user_id:string;name:string}>('SELECT id AS user_id,name FROM users WHERE id != ?',IDS.outsider)));
   app.post('/api/dev/login',(req,res)=> {
     const id=z.object({user_id:uuid}).strict().parse(req.body).user_id;
@@ -220,6 +227,7 @@ export function createApp(options:AppOptions) {
     });
   });
   app.get('/api/me/attempts',(req,res)=>res.json(store.all<Row>('SELECT * FROM attempts WHERE user_id=? ORDER BY rowid DESC',current(req).user_id).map(r=>parse<AttemptResult>(r))));
+  mountQA(app,qa,{current,membership,weekFor,idempotent});
   app.use('/api',(_req,_res,next)=>next(new HttpError(404,'NOT_FOUND','API 경로를 찾을 수 없습니다.')));
   if(options.frontendDir && existsSync(resolve(options.frontendDir,'index.html'))) app.use(express.static(options.frontendDir));
   app.use((error:unknown,_req:Request,res:Response,_next:NextFunction)=> {
@@ -228,5 +236,5 @@ export function createApp(options:AppOptions) {
     if(error instanceof multer.MulterError) {res.status(413).json({code:'UPLOAD_LIMIT',message:'PDF/PPTX 파일은 한 번에 하나, 20MB 이하로 올려 주세요.',retryable:false});return}
     res.status(500).json({code:'INTERNAL_ERROR',message:'서버에서 요청을 처리하지 못했습니다.',retryable:false});
   });
-  return {app,store,waitForJobs:()=>Promise.all([...active]),close:async()=>{await Promise.all([...active]);store.db.close()}};
+  return {app,store,waitForJobs:async()=>{await Promise.all([...active]);await qa.waitForJobs()},close:async()=>{await Promise.all([...active]);await qa.waitForJobs();store.db.close()}};
 }

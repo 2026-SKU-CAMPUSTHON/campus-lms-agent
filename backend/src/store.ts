@@ -27,6 +27,8 @@ export class Store {
       CREATE TABLE IF NOT EXISTS quizzes (id TEXT PRIMARY KEY, draft_id TEXT UNIQUE REFERENCES drafts(id), course_id TEXT REFERENCES courses(id), week_id TEXT REFERENCES weeks(id), data TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS attempts (id TEXT PRIMARY KEY, user_id TEXT REFERENCES users(id), quiz_id TEXT REFERENCES quizzes(id), data TEXT NOT NULL, UNIQUE(user_id,quiz_id));
       CREATE TABLE IF NOT EXISTS jobs (id TEXT PRIMARY KEY, course_id TEXT REFERENCES courses(id), data TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS threads (id TEXT PRIMARY KEY, course_id TEXT REFERENCES courses(id), week_id TEXT REFERENCES weeks(id), student_id TEXT REFERENCES users(id), data TEXT NOT NULL CHECK(json_extract(data,'$.clarification_count') BETWEEN 0 AND 1));
+      CREATE INDEX IF NOT EXISTS threads_by_course_week_student ON threads(course_id,week_id,student_id);
       CREATE TABLE IF NOT EXISTS idempotency (user_id TEXT, route TEXT, key TEXT, fingerprint TEXT, status INTEGER, response TEXT, PRIMARY KEY(user_id,route,key));
     `);
     for(const [id,name] of [[IDS.professor,'교수 체험'],[IDS.student,'학생 가'],[IDS.student2,'학생 나'],[IDS.outsider,'다른 강의 학생']]) this.run('INSERT OR IGNORE INTO users VALUES (?,?)',id,name);
