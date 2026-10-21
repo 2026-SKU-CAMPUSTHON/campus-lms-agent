@@ -1,4 +1,4 @@
-# API 0.3.1-claude.1 / Worker 큐 draft-1
+# API 0.4.0-reports.1 / Worker 큐 draft-1
 
 API의 구현된 첫 기능은 x-implementation-status=implemented로 표시한다. planned는 아직 구현되지 않은 계약이다. 로컬 구현은 세션 쿠키, 후속 Supabase 구현은 JWT를 사용한다. Worker 큐 계약은 초안이다. `openapi.yaml`은 JSON 문법으로 작성한 유효 YAML이다.
 
@@ -17,3 +17,9 @@ API의 구현된 첫 기능은 x-implementation-status=implemented로 표시한�
 후속 A 계약 PR에서 정할 것: memberships 등록/관리 API, Job 성공 결과의 draft_id 등 참조, 업로드 크기/형식, pagination, 통계 분모, 임베딩 모델/차원, DB 스키마, 동시성·재시도 정책, 마이그레이션 소유권. PR에서 계약 버전·샘플·호출 코드를 함께 갱신한다.
 
 현재 Python CLI 추출 인터페이스와 목표 큐 계약의 차이는 [구현 현황](../implementation.md)에 기록한다. 기본 생성은 Claude API이며 퀴즈·Q&A에 적용한다. Codex는 명시적인 선택 모드이고 OpenAI/Gemini는 이전 퀴즈 전용 어댑터다.
+
+## 교수 레포트 계약
+
+quizzes/qa 보고서 API를 구현했다. 교수 권한, 선택 주차 검증, 현재 수강생 기준 분모와 실제 제출 답안 기준 정답률을 적용한다. 전체 선택은 고유 참여자와 합산 정답/답안 수를 사용하며 평균 비율을 내지 않는다. 게시 퀴즈 없음·분모 0은 null이다.
+
+Q&A summary/weeks는 선택 주차 전체 집계이며 threads만 page/page_size로 나눈다. 기본 25개·최대 100개이고 내부 판단 기록은 대화 응답에 포함하지 않는다. quiz-report.json, qa-report.json은 합성 계약 샘플이다. [상세 계산 기준](../reports.md)을 따른다.

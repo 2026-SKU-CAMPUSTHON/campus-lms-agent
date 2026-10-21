@@ -1,0 +1,90 @@
+{
+  "course_id": "20000000-0000-4000-8000-000000000001",
+  "generated_at": "2026-10-21T08:30:00Z",
+  "summary": {
+    "eligible_student_count": 2,
+    "participant_count": 1,
+    "quiz_count": 1,
+    "question_count": 1,
+    "submission_count": 1,
+    "correct_count": 0,
+    "answer_count": 1,
+    "participation_rate": 0.5,
+    "correct_rate": 0
+  },
+  "weeks": [
+    {
+      "course_id": "20000000-0000-4000-8000-000000000001",
+      "week_id": "30000000-0000-4000-8000-000000000001",
+      "week_no": 1,
+      "title": "강의 자료로 복습하기",
+      "eligible_student_count": 2,
+      "participant_count": 1,
+      "quiz_count": 1,
+      "question_count": 1,
+      "submission_count": 1,
+      "correct_count": 0,
+      "answer_count": 1,
+      "participation_rate": 0.5,
+      "correct_rate": 0,
+      "questions": [
+        {
+          "question_id": "60000000-0000-4000-8000-000000000001",
+          "quiz_id": "50000000-0000-4000-8000-000000000001",
+          "quiz_no": 1,
+          "question_no": 1,
+          "prompt": "정규화의 목적은 무엇인가요?",
+          "options": [
+            {
+              "option_id": "a",
+              "text": "중복 감소"
+            },
+            {
+              "option_id": "b",
+              "text": "중복 증가"
+            },
+            {
+              "option_id": "c",
+              "text": "모두 삭제"
+            },
+            {
+              "option_id": "d",
+              "text": "무작위 정렬"
+            }
+          ],
+          "correct_option_id": "a",
+          "explanation": "정규화는 데이터 중복을 줄이는 설계입니다.",
+          "sources": [
+            {
+              "material_id": "40000000-0000-4000-8000-000000000001",
+              "chunk_id": "70000000-0000-4000-8000-000000000001",
+              "source_type": "document",
+              "slide_no": 2,
+              "start_sec": null,
+              "end_sec": null
+            }
+          ],
+          "correct_count": 0,
+          "answer_count": 1,
+          "correct_rate": 0
+        }
+      ]
+    },
+    {
+      "course_id": "20000000-0000-4000-8000-000000000001",
+      "week_id": "30000000-0000-4000-8000-000000000002",
+      "week_no": 2,
+      "title": "두 번째 학습 주차",
+      "eligible_student_count": 2,
+      "participant_count": 0,
+      "quiz_count": 0,
+      "question_count": 0,
+      "submission_count": 0,
+      "correct_count": 0,
+      "answer_count": 0,
+      "participation_rate": null,
+      "correct_rate": null,
+      "questions": []
+    }
+  ]
+}
