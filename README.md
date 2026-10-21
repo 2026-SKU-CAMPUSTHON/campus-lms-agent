@@ -11,7 +11,8 @@ Node.js 24.13 이상과 Python 3.9 이상이 필요하다.
 ```bash
 npm ci
 python3 -m venv .venv-worker
-.venv-worker/bin/python -m pip install -r worker/requirements.txt
+source .venv-worker/bin/activate
+python -m pip install -r worker/requirements.txt
 cp .env.example .env
 ```
 
@@ -66,6 +67,6 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-브라우저 자동 검사는 실제 문서 처리를 호출하되 모델 응답은 테스트 대역이다. 실제 모델 호출과 구분한다. `scripts/verify-live-flow.ts <파일 경로> [문항 수] [시작 페이지] [끝 페이지]`는 설정한 실제 제공자로 생성·게시·채점을 검증하며 로컬 `.data/`에 결과를 남긴다.
+검사 명령도 Python 가상 환경을 활성화한 셸에서 실행한다. 브라우저 자동 검사는 실제 문서 처리를 호출하되 모델 응답은 테스트 대역이다. 실제 모델 호출과 구분한다. `scripts/verify-live-flow.ts <파일 경로> [문항 수] [시작 페이지] [끝 페이지]`는 설정한 실제 제공자로 생성·게시·채점을 검증하며 로컬 `.data/`에 결과를 남긴다.
 
 계약 검사는 `requirements-contracts.txt`를 설치한 Python으로 `scripts/check_contracts.py`를 실행한다. [기획·페르소나](docs/product.md) · [기술 선택과 재사용 검토](docs/architecture.md) · [AI 협업 방법](docs/coordination.md)
