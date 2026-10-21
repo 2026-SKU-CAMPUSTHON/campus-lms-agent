@@ -1,6 +1,6 @@
 # GitHub 참고 프로젝트와 추천 기술 아키텍처
 
-> **구현 업데이트 (2026-10-21):** 사용자 요청으로 기본 생성을 Claude API로 변경했다. 실제 Claude 퀴즈와 Jev·Claude Q&A의 답변·추가 질문 1회·교수 승격·교수 답변을 소수 사례로 확인했다. 현재 검색은 단어 기반이며 임베딩·Supabase·음성 전사는 미구현이다. Figma SVG는 이전 Gemini 표시가 남은 원본이다. 현재 동작과 차이는 [구현 현황](implementation.md)을 따른다.
+> **구현 업데이트 (2026-10-21):** 사용자 요청으로 기본 생성을 Claude API로 변경했다. 실제 Claude 퀴즈와 Jev·Claude Q&A의 답변·추가 질문 1회·교수 승격·교수 답변을 소수 사례로 확인했다. 현재 검색은 단어 기반이며 로컬 faster-whisper 음성 전사·시간 출처를 구현했다. 임베딩·Supabase는 미구현이다. Figma SVG는 이전 Gemini 표시가 남은 원본이다. 현재 동작과 차이는 [구현 현황](implementation.md)을 따른다.
 
 
 관련 기획: [기획과 페르소나](product.md)

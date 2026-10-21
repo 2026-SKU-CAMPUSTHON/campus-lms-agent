@@ -1,0 +1,14 @@
+{
+  "material_id": "40000000-0000-4000-8000-000000000099",
+  "status": "completed",
+  "duration_sec": 28,
+  "language": "ko",
+  "segments": [
+    {
+      "start_sec": 12,
+      "end_sec": 28,
+      "text": "정규화는 데이터 중복을 줄입니다."
+    }
+  ],
+  "error": null
+}

@@ -1,4 +1,4 @@
-# API 0.4.0-reports.1 / Worker 큐 draft-1
+# API 0.5.0-media.1 / Worker 큐 draft-1
 
 API의 구현된 첫 기능은 x-implementation-status=implemented로 표시한다. planned는 아직 구현되지 않은 계약이다. 로컬 구현은 세션 쿠키, 후속 Supabase 구현은 JWT를 사용한다. Worker 큐 계약은 초안이다. `openapi.yaml`은 JSON 문법으로 작성한 유효 YAML이다.
 
@@ -23,3 +23,9 @@ API의 구현된 첫 기능은 x-implementation-status=implemented로 표시한�
 quizzes/qa 보고서 API를 구현했다. 교수 권한, 선택 주차 검증, 현재 수강생 기준 분모와 실제 제출 답안 기준 정답률을 적용한다. 전체 선택은 고유 참여자와 합산 정답/답안 수를 사용하며 평균 비율을 내지 않는다. 게시 퀴즈 없음·분모 0은 null이다.
 
 Q&A summary/weeks는 선택 주차 전체 집계이며 threads만 page/page_size로 나눈다. 기본 25개·최대 100개이고 내부 판단 기록은 대화 응답에 포함하지 않는다. quiz-report.json, qa-report.json은 합성 계약 샘플이다. [상세 계산 기준](../reports.md)을 따른다.
+
+## 녹음·동영상 계약
+
+/media 업로드와 transcript/playback/transcription-retry API를 구현했다. MaterialSummary는 문서와 미디어로 구분하며 목록에 전체 전사·파일 경로는 반환하지 않는다. Source도 document(페이지)와 transcript(시간)로 구분한다. 미디어는 500MB·120분 이하, 로컬 단일 전사·대기 포함 3개이며 자세한 기준은 docs/media.md를 따른다.
+
+비공개 미디어의 학생 원본·전체 전사 접근은 403이며 같은 주차 Q&A 근거로는 사용할 수 있다. 시간 출처는 Q&A 레포트에도 보존한다. qa-transcript.json, transcript.json은 합성 계약 샘플이다. Worker 큐 draft-1과 현재 Python CLI의 경계를 문서에 구분한다.

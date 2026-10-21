@@ -4,7 +4,7 @@ import {execFileSync} from 'node:child_process';
 const root=resolve(import.meta.dirname,'..');
 test.beforeAll(()=>execFileSync('python3',[resolve(root,'scripts/create-sample-pdf.py')]));
 test('교수 업로드·생성·일부 게시 후 학생 제출·오답·다른 학생 격리',async({page})=> {
-  await page.goto('/');await page.getByRole('button',{name:/교수 체험/}).click();
+  await page.goto('/');await page.getByRole('button',{name:/^교수 체험(?:\s|$)/}).click();
   await expect(page.getByRole('heading',{name:'이번 주 개념을, 한 번 더.'})).toBeVisible();
   await page.getByLabel('강의 자료 파일').setInputFiles(process.env.TEST_DOCUMENT_PATH || resolve(root,'tests/fixtures/generated/sample.pdf'));
   await page.getByLabel('시작 페이지').fill('2');await page.getByLabel('끝 페이지').fill('3');
@@ -15,7 +15,7 @@ test('교수 업로드·생성·일부 게시 후 학생 제출·오답·다른 
   await page.getByLabel('2번 문제 선택',{exact:true}).uncheck();
   await page.getByRole('button',{name:'2문제 게시하기'}).click();await expect(page.getByRole('status').filter({hasText:'2문제를 게시했어요.'})).toBeVisible();
   await page.screenshot({path:resolve(root,'test-results/professor.png'),fullPage:true});
-  await page.getByRole('button',{name:'로그아웃'}).click();await page.getByRole('button',{name:/학생 가/}).click();
+  await page.getByRole('button',{name:'로그아웃'}).click();await page.getByRole('button',{name:/^학생 가(?:\s|$)/}).click();
   const quizButtons=page.getByRole('button',{name:'퀴즈 풀기',exact:true});await quizButtons.first().click();
   await expect(page.getByText('개념 확인 퀴즈',{exact:true})).toBeVisible();
   await expect(page.getByText('풀이 확인',{exact:true})).toHaveCount(0);
@@ -26,7 +26,7 @@ test('교수 업로드·생성·일부 게시 후 학생 제출·오답·다른 
   await page.screenshot({path:resolve(root,'test-results/student-result.png'),fullPage:true});
   await page.reload();await page.getByRole('button',{name:'내 오답 확인',exact:true}).first().click();
   await expect(page.getByRole('heading',{name:'나의 오답과 풀이'})).toBeVisible();
-  await page.getByRole('button',{name:'로그아웃'}).click();await page.getByRole('button',{name:/학생 나/}).click();
+  await page.getByRole('button',{name:'로그아웃'}).click();await page.getByRole('button',{name:/^학생 나(?:\s|$)/}).click();
   await expect(page.getByRole('button',{name:'내 오답 확인',exact:true})).toHaveCount(0);
   await page.setViewportSize({width:390,height:844});
   await expect(page.getByRole('button',{name:'퀴즈 풀기',exact:true}).first()).toBeVisible();

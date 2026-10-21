@@ -1,0 +1,21 @@
+import {test,expect} from './fixtures';
+import {resolve} from 'node:path';
+import {execFileSync} from 'node:child_process';
+const root=resolve(import.meta.dirname,'..'),course='20000000-0000-4000-8000-000000000001',week='30000000-0000-4000-8000-000000000001';
+test.beforeAll(()=>execFileSync('python3',[resolve(root,'scripts/create-sample-media.py')]));
+test('미디어 자동 전사·비공개 보호·Q&A 시간 출처와 공개 원본 구간 재생',async({page})=> {
+ await page.goto('/');await page.getByRole('button',{name:/^교수 체험(?:\s|$)/}).click();await page.getByRole('button',{name:'녹음·동영상',exact:true}).click();
+ await page.getByLabel('강의 녹음·동영상 파일').setInputFiles(resolve(root,'tests/fixtures/generated/sample-tone.wav'));await page.getByRole('button',{name:'업로드하고 자동 전사',exact:true}).click();await expect(page.getByText('Q&A 근거 준비 완료',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'전사 내용 확인',exact:true}).click();await expect(page.getByText('정규화는 데이터 중복과 갱신 이상을 줄이는 과정입니다.',{exact:true})).toBeVisible();
+ const content=await(await page.request.get(`/api/courses/${course}/weeks/${week}/content`)).json();const privateId=content.materials.find((m:{source_type:string})=>m.source_type==='audio').material_id;
+ await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:resolve(root,'test-results/media-professor.png'),fullPage:true});
+ await page.getByRole('button',{name:'로그아웃'}).click();await page.getByRole('button',{name:/^학생 가(?:\s|$)/}).click();await page.getByRole('button',{name:'강의 Q&A',exact:true}).click();
+ await page.getByLabel('새 질문',{exact:true}).fill('정규화의 목적은 무엇인가요?');await page.getByRole('button',{name:'질문하기',exact:true}).click();await expect(page.locator('.transcript-citation .source')).toContainText('00:00–00:04');await expect(page.getByText('원본 비공개',{exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'해당 구간 재생',exact:true})).toHaveCount(0);
+ expect((await page.request.get(`/api/materials/${privateId}/transcript`)).status()).toBe(403);expect((await page.request.get(`/api/materials/${privateId}/playback`,{headers:{Range:'bytes=0-31'}})).status()).toBe(403);
+ await page.getByRole('button',{name:'로그아웃'}).click();await page.getByRole('button',{name:/^교수 체험(?:\s|$)/}).click();await page.getByRole('button',{name:/2주차/}).click();await page.getByRole('button',{name:'녹음·동영상',exact:true}).click();
+ await page.getByLabel('강의 녹음·동영상 파일').setInputFiles(resolve(root,'tests/fixtures/generated/sample-tone.wav'));await page.getByLabel('학생에게 원본·전체 전사 공개',{exact:true}).check();await page.getByRole('button',{name:'업로드하고 자동 전사',exact:true}).click();await expect(page.getByText('Q&A 근거 준비 완료',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'로그아웃'}).click();await page.getByRole('button',{name:/^학생 가(?:\s|$)/}).click();await page.getByRole('button',{name:/2주차/}).click();await page.getByRole('button',{name:'강의 Q&A',exact:true}).click();
+ await page.getByLabel('새 질문',{exact:true}).fill('강의 녹음에서 정규화는 무엇인가요?');await page.getByRole('button',{name:'질문하기',exact:true}).click();await expect(page.getByRole('button',{name:'해당 구간 재생',exact:true})).toBeVisible();await page.getByRole('button',{name:'해당 구간 재생',exact:true}).click();
+ const player=page.locator('audio');await expect(player).toBeVisible();await expect.poll(()=>player.evaluate(e=>(e as HTMLAudioElement).readyState)).toBeGreaterThan(0);await expect.poll(()=>player.evaluate(e=>(e as HTMLAudioElement).currentTime)).toBeGreaterThanOrEqual(.19);
+ await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:resolve(root,'test-results/media-student-source.png'),fullPage:true});await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+});

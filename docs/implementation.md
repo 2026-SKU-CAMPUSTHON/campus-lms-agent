@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | 웹 | React·Vite·TypeScript, 교수/학생 화면·Q&A·주차별 레포트 | 실제 계정·강의 관리 화면 |
 | API | Express, 강의별 권한, 비공개 자료, 선택 게시, 서버 채점, 개인 결과 | 실제 강의 관리 |
-| 자료 처리 | Python 별도 프로세스, PDF(pypdf)·PPTX(OOXML), 페이지 순서·범위 보존 | Docling/OCR·녹음 전사·벡터 색인 |
+| 자료 처리 | Python 별도 프로세스, PDF(pypdf)·PPTX(OOXML), 페이지 순서·범위 보존 | Docling/OCR·벡터 색인 |
 | 모델 | 기본 Claude API(퀴즈·Q&A), 선택적 Codex CLI 및 이전 퀴즈용 OpenAI·Gemini 어댑터 | 배포 환경의 운영·예산 관리 |
 | Q&A 판단 | 공식 TypeSafe SDK Jev 어댑터·단어 검색·추가 질문 1회·교수 답변 | 한국어 경계 사례 확장 평가·벡터 검색 |
 | 인증 | 서버 세션·체험 계정, 강의 권한 검증, 로컬 주소 제한 | Supabase Auth JWT·실제 수강생 관리 |
@@ -17,7 +17,7 @@ Supabase 설정이 없어 첫 기능은 로컬 SQLite 저장 어댑터로 실행
 
 ## 구현 계약
 
-계약 버전은 `0.4.0-reports.1`이다. `openapi.yaml`에서 `x-implementation-status`로 구현된 API와 후속 계획 API를 구분한다. 구현된 로컬 API는 세션 쿠키를 사용하고, 후속 Supabase API는 JWT 설계로 남긴다.
+계약 버전은 `0.5.0-media.1`이다. `openapi.yaml`에서 `x-implementation-status`로 구현된 API와 후속 계획 API를 구분한다. 구현된 로컬 API는 세션 쿠키를 사용하고, 후속 Supabase API는 JWT 설계로 남긴다.
 
 Worker JSON 스키마 draft-1은 향후 작업 큐 통합 계약이다. 현재 CLI 프로세스는 `document_extract.py <파일> <시작> <끝>`으로 `{total_slides, slides:[{slide_no,text}]}`를 반환한다. 장기 키·서명 URL은 결과에 포함하지 않는다.
 
@@ -61,3 +61,11 @@ Quizify 소스는 임시 폴더에서 검토했으며 의존성 설치·실제 S
 backend/src/reports/에서 저장된 퀴즈와 Q&A를 집계한다. 현재 수강생 중 고유 제출 인원으로 참여율을 계산하고, 실제 제출 답안의 정답 수로 정답률을 계산한다. 전체 기간은 분자·분모 합산이다. Q&A는 선택 주차 전체의 현재 상태를 집계하고 대화 내역만 페이지로 나눈다. 교수 권한을 서버에서 검사하고 기존 Q&A 공개 DTO로 내부 판단을 제거한다.
 
 화면은 교수 전용 수업 레포트 탭이며 주차 선택·전체 선택·문항별 정답과 풀이·Q&A 대화·오류 상태를 제공한다. AI를 다시 호출하지 않는다. 수강 이력 스냅샷·보고서 파일 다운로드·AI 서술형 요약은 미구현이다. [기준과 API](reports.md)를 따른다.
+
+## 녹음·동영상 전사
+
+교수의 주차별 업로드를 디스크에 저장한 뒤 MediaService가 한 파일씩 자동 전사한다. ffprobe/ffmpeg로 로컬 입력·트랙·길이를 검사하고 Python faster-whisper small·CPU int8을 실행한다. 모델·시간 형식·무음·파일 오류는 실패로 저장하며 원본을 보존하고 명시적 재시도를 제공한다.
+
+기존 문서는 source_type이 없어도 document로 해석한다. 완료된 전사만 같은 강의·주차의 단어 검색에 포함하고 인접 구간을 1,000자·60초 안에서 묶는다. 문서 페이지와 전사 시간은 타입·계약으로 구분한다. Q&A·레포트는 시간 출처를 보여주고 권한이 있을 때만 재생기를 제공한다. 원본 비공개와 Q&A 처리 허용을 분리한다.
+
+현재 전사는 로컬 프로세스 직렬 처리이며 Supabase 큐·lease·다중 서버를 구현한 것은 아니다. 기본 설정·크기·시간·정확도 제약은 [미디어 명세](media.md)를 따른다.

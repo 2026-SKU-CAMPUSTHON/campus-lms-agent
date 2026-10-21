@@ -14,6 +14,9 @@ import { createOpenAIGenerator } from './quiz-generation/openai.js';
 import {createClaudeGenerator} from './quiz-generation/claude.js';
 import {DEFAULT_CLAUDE_MODEL} from './ai/claude-json.js';
 import type {Provider} from './ai/config.js';
+import {mountMedia} from './media/routes.js';
+import type {Transcriber} from './media/transcribe.js';
+import {isDocument} from './types.js';
 import {mountReports} from './reports/routes.js';
 import {QAService} from './qa/service.js';
 import {mountQA} from './qa/routes.js';
@@ -24,7 +27,7 @@ import type { AttemptResult, Course, DraftQuestion, Job, Material, PublicQuiz, Q
 
 interface Row { id:string; course_id:string; week_id:string; data:string; draft_id?:string }
 interface AuthedRequest extends Request { user:User }
-export interface AppOptions { root:string; dataDir:string; demoAuth:boolean; apiKey?:string; model?:string; provider?:Provider; codexBin?:string; generator?:Generator; jevApiKey?:string; jevModel?:string; jevMinimum?:number; qaJudge?:Judge; qaGenerator?:QAGenerator; frontendDir?:string }
+export interface AppOptions { root:string; dataDir:string; demoAuth:boolean; apiKey?:string; model?:string; provider?:Provider; codexBin?:string; generator?:Generator; transcriber?:Transcriber; jevApiKey?:string; jevModel?:string; jevMinimum?:number; qaJudge?:Judge; qaGenerator?:QAGenerator; frontendDir?:string }
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 const parse=<T>(row:{data:string}):T=>JSON.parse(row.data) as T;
 const uuid=z.string().uuid();
@@ -73,7 +76,7 @@ export function createApp(options:AppOptions) {
     next();
   });
   app.use(express.json({limit:'128kb'}));
-  app.get('/api/health',(_req,res)=>res.json({status:'ok',mode:'local-development',ai_configured:ready,provider,model,contract_version:'0.4.0-reports.1',qa_configured:qaReady,jev_configured:Boolean(options.jevApiKey || options.qaJudge),jev_model:options.jevModel || 'jev-1.13.0'}));
+  app.get('/api/health',(_req,res)=>res.json({status:'ok',mode:'local-development',ai_configured:ready,provider,model,contract_version:'0.5.0-media.1',qa_configured:qaReady,jev_configured:Boolean(options.jevApiKey || options.qaJudge),jev_model:options.jevModel || 'jev-1.13.0'}));
   app.get('/api/dev/accounts',(_req,res)=>res.json(store.all<{user_id:string;name:string}>('SELECT id AS user_id,name FROM users WHERE id != ?',IDS.outsider)));
   app.post('/api/dev/login',(req,res)=> {
     const id=z.object({user_id:uuid}).strict().parse(req.body).user_id;
@@ -141,7 +144,7 @@ export function createApp(options:AppOptions) {
   app.get('/api/courses/:course_id/weeks/:week_id/content',(req,res)=> {
     const course=field(req.params.course_id),week=field(req.params.week_id);weekFor(req,course,week);
     const role=membership(req,course);
-    const materials=store.all<Row>('SELECT * FROM materials WHERE course_id=? AND week_id=? ORDER BY rowid DESC',course,week).map(r=>parse<Material>(r)).filter(m=>role==='professor'||m.original_visible_to_students).map(({slides:_slides,file_path:_path,...publicData})=>publicData);
+    const materials=store.all<Row>('SELECT * FROM materials WHERE course_id=? AND week_id=? ORDER BY rowid DESC',course,week).map(r=>parse<Material>(r)).filter(m=>role==='professor'||m.original_visible_to_students).map(m=>{if(isDocument(m)){const {slides:_slides,file_path:_path,...view}=m;return {...view,source_type:'document' as const}}const {slides:_slides,segments:_segments,file_path:_path,...view}=m;return view});
     const drafts=role==='professor'?store.all<Row>('SELECT * FROM drafts WHERE course_id=? AND week_id=? ORDER BY rowid DESC',course,week).map(r=>parse<QuizDraft>(r)):[];
     const quizzes=store.all<Row>('SELECT * FROM quizzes WHERE course_id=? AND week_id=? ORDER BY rowid DESC',course,week).map(r=>{const q=parse<PublicQuiz>(r);return {quiz_id:q.quiz_id,draft_id:r.draft_id!,week_id:q.week_id,question_count:q.questions.length}});
     res.json({materials,drafts,quizzes} satisfies WeekContent);
@@ -181,6 +184,7 @@ export function createApp(options:AppOptions) {
       const row=resource('materials',id);membership(req,row.course_id,'professor');
       const material=parse<Material>(row);
       if(row.course_id!==course || row.week_id!==week) throw new HttpError(422,'WRONG_WEEK','현재 주차의 자료만 사용할 수 있습니다.');
+      if(!isDocument(material))throw new HttpError(422,'DOCUMENT_REQUIRED','퀴즈는 PDF/PPTX 자료로 생성해 주세요. 전사는 Q&A 근거로 사용합니다.');
       if(material.status!=='completed') throw new HttpError(409,'MATERIAL_NOT_READY','자료 처리 완료 후 문제를 생성해 주세요.');return material;
     });
     if(!ready) throw new HttpError(503,'AI_NOT_CONFIGURED',provider==='codex'?'Codex 로그인을 확인해 주세요. 터미널에서 codex login으로 연결할 수 있습니다.':provider==='openai'?'문제 생성용 GPT API 키가 설정되지 않았습니다. 서버 .env의 OPENAI_API_KEY를 설정해 주세요.':'문제 생성용 Gemini API 키가 설정되지 않았습니다. 서버 .env의 GEMINI_API_KEY를 설정해 주세요.');
@@ -190,6 +194,7 @@ export function createApp(options:AppOptions) {
       if(store.get<{count:number}>("SELECT COUNT(*) AS count FROM jobs WHERE course_id=? AND json_extract(data,'$.status') IN ('queued','processing')",course)!.count>0) throw new HttpError(409,'JOB_IN_PROGRESS','이 강의의 진행 중인 작업을 마친 뒤 다시 생성해 주세요.');
       const job:Job={job_id:randomUUID(),status:'queued',result:null,error:null};putJob(course,job);
       const material=materials[0];
+      if(!isDocument(material))throw new HttpError(422,'DOCUMENT_REQUIRED','문서 자료를 선택해 주세요.');
       queue(course,job,async()=> {
         const questions=await generateAcrossRange(material.slides,body.question_count,generate);
         const chunkIds=new Map(material.slides.map(s=>[s.slide_no,randomUUID()]));
@@ -233,6 +238,7 @@ export function createApp(options:AppOptions) {
   app.get('/api/me/attempts',(req,res)=>res.json(store.all<Row>('SELECT * FROM attempts WHERE user_id=? ORDER BY rowid DESC',current(req).user_id).map(r=>parse<AttemptResult>(r))));
   mountQA(app,qa,{current,membership,weekFor,idempotent});
   mountReports(app,store,{membership,viewThread:thread=>qa.public(thread)});
+  const media=mountMedia(app,store,options.root,options.dataDir,{membership,weekFor},options.transcriber);
   app.use('/api',(_req,_res,next)=>next(new HttpError(404,'NOT_FOUND','API 경로를 찾을 수 없습니다.')));
   if(options.frontendDir && existsSync(resolve(options.frontendDir,'index.html'))) app.use(express.static(options.frontendDir));
   app.use((error:unknown,_req:Request,res:Response,_next:NextFunction)=> {
@@ -241,5 +247,5 @@ export function createApp(options:AppOptions) {
     if(error instanceof multer.MulterError) {res.status(413).json({code:'UPLOAD_LIMIT',message:'PDF/PPTX 파일은 한 번에 하나, 20MB 이하로 올려 주세요.',retryable:false});return}
     res.status(500).json({code:'INTERNAL_ERROR',message:'서버에서 요청을 처리하지 못했습니다.',retryable:false});
   });
-  return {app,store,waitForJobs:async()=>{await Promise.all([...active]);await qa.waitForJobs()},close:async()=>{await Promise.all([...active]);await qa.waitForJobs();store.db.close()}};
+  return {app,store,waitForJobs:async()=>{await Promise.all([...active]);await qa.waitForJobs();await media.waitForJobs()},close:async()=>{await Promise.all([...active]);await qa.waitForJobs();await media.waitForJobs();store.db.close()}};
 }
