@@ -1,0 +1,13 @@
+import { config } from 'dotenv';
+import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
+import { createApp } from './app.js';
+const root=fileURLToPath(new URL('../../',import.meta.url));
+config({path:resolve(root,'.env'),quiet:true});
+if(process.env.ENABLE_DEMO_AUTH!=='true') throw new Error('먼저 .env.example을 .env로 복사하고 ENABLE_DEMO_AUTH=true를 설정하세요. 이 버전은 로컬 개발 전용입니다.');
+const port=Number(process.env.PORT || 3000);
+const provider=process.env.AI_PROVIDER || 'codex';
+if(!['codex','openai','gemini'].includes(provider))throw new Error('AI_PROVIDER는 codex, openai 또는 gemini여야 합니다.');
+const service=createApp({provider:provider as 'codex'|'openai'|'gemini',codexBin:process.env.CODEX_BIN,root,dataDir:resolve(root,process.env.DATA_DIR || '.data'),demoAuth:true,apiKey:provider==='openai'?process.env.OPENAI_API_KEY:provider==='gemini'?process.env.GEMINI_API_KEY:undefined,model:provider==='codex'?process.env.CODEX_MODEL:provider==='openai'?process.env.OPENAI_MODEL:process.env.GEMINI_MODEL,frontendDir:resolve(root,'frontend/dist')});
+const server=service.app.listen(port,'127.0.0.1',()=>console.log(`Campus LMS local: http://127.0.0.1:${port}`));
+for(const signal of ['SIGINT','SIGTERM'] as const) process.once(signal,()=>{server.close(()=>{void service.close().then(()=>process.exit(0))})});

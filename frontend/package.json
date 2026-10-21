@@ -1,0 +1,22 @@
+{
+  "name": "@campus/frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "lucide-react": "1.60.0"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "@vitejs/plugin-react": "6.1.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0"
+  }
+}

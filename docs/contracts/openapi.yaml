@@ -2,13 +2,13 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Campus LMS Agent API",
-    "version": "0.1.0-draft.1",
-    "description": "구현 전 초안. 계약 고정 작업에서 memberships 관리, Job 결과 참조, 파일 제한, pagination, 통계·재응시 정책을 보완한다. 모든 UUID는 같은 강의 소유권을 검사한다. 실제 배포 주소 없음."
+    "version": "0.2.0-quiz.1",
+    "description": "PPTX/PDF 첫 기능 구현 계약. x-implementation-status=implemented는 로컬 개발 서버에서 제공하며 planned는 후속 구현이다. 로컬 인증은 HttpOnly 세션 쿠키이며 실제 Supabase JWT/DB 배포는 미구현이다."
   },
   "servers": [
     {
       "url": "http://localhost:3000/api",
-      "description": "예정된 로컬 주소, 서버 미구현"
+      "description": "로컬 개발 서버. ENABLE_DEMO_AUTH=true, 127.0.0.1 전용."
     }
   ],
   "security": [
@@ -23,7 +23,7 @@
         "description": "현재 계정이 속한 강의만 조회한다.",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -45,14 +45,20 @@
               }
             }
           }
-        }
+        },
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "localSession": []
+          }
+        ]
       },
       "post": {
         "operationId": "createCourse",
         "description": "",
         "responses": {
           "201": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -91,7 +97,8 @@
               }
             }
           }
-        }
+        },
+        "x-implementation-status": "planned"
       }
     },
     "/courses/{course_id}/weeks": {
@@ -100,7 +107,7 @@
         "description": "",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -133,6 +140,12 @@
               "format": "uuid"
             }
           }
+        ],
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "localSession": []
+          }
         ]
       },
       "post": {
@@ -140,7 +153,7 @@
         "description": "해당 강의 교수 전용.",
         "responses": {
           "201": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -194,16 +207,17 @@
               }
             }
           }
-        }
+        },
+        "x-implementation-status": "planned"
       }
     },
     "/courses/{course_id}/weeks/{week_id}/materials": {
       "post": {
         "operationId": "uploadMaterial",
-        "description": "교수 전용. 원본 공개 여부와 AI 처리 허용을 구분한다. PPTX/PDF는 slide 범위를 검사한다. 구형 ppt는 초안 범위 밖이다.",
+        "description": "교수 전용. PDF/PPTX 1개, 최대20MB, 물리 페이지 번호 1부터 양 끝 포함, 최대500페이지 문서. 구형 PPT·음성·영상은 후속 구현이다. source_type=document만 허용한다. 텍스트 없는 스캔·이미지 자료는 오류다.",
         "responses": {
           "202": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -257,9 +271,7 @@
                   "source_type": {
                     "type": "string",
                     "enum": [
-                      "document",
-                      "audio",
-                      "video"
+                      "document"
                     ]
                   },
                   "original_visible_to_students": {
@@ -277,13 +289,21 @@
                 "required": [
                   "file",
                   "source_type",
-                  "original_visible_to_students"
+                  "original_visible_to_students",
+                  "slide_start",
+                  "slide_end"
                 ],
                 "additionalProperties": false
               }
             }
           }
-        }
+        },
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "localSession": []
+          }
+        ]
       }
     },
     "/jobs/{job_id}": {
@@ -292,7 +312,7 @@
         "description": "해당 강의 교수만 조회한다. Worker 오류는 답변 근거 부족과 별개다.",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -322,16 +342,22 @@
               "format": "uuid"
             }
           }
+        ],
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "localSession": []
+          }
         ]
       }
     },
     "/courses/{course_id}/weeks/{week_id}/quiz-drafts": {
       "post": {
         "operationId": "generateQuizDraft",
-        "description": "교수 전용. 등록된 페이지 범위를 분할·배분한다. 완료 Job과 draft_id 연결은 A/C 첫 계약에서 확정한다.",
+        "description": "교수 전용. 처리 완료된 자료 한 개의 등록된 페이지 범위를 사용한다. 약 50문항은 최대 8개씩 배치 생성한다. 완료 Job의 result.draft_id로 초안을 조회한다. 동일 강의 진행 작업이 있으면 409다. 기본 Codex 로컬 제공자, OpenAI API와 Gemini 제공자는 설정으로 선택한다.",
         "responses": {
           "202": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -410,7 +436,13 @@
               }
             }
           }
-        }
+        },
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "localSession": []
+          }
+        ]
       }
     },
     "/quiz-drafts/{draft_id}": {
@@ -419,7 +451,7 @@
         "description": "해당 강의 교수만 정답·해설 포함 초안을 조회한다.",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -449,6 +481,12 @@
               "format": "uuid"
             }
           }
+        ],
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "localSession": []
+          }
         ]
       }
     },
@@ -458,7 +496,7 @@
         "description": "교수 전용. 선택한 문항만 게시한다.",
         "responses": {
           "201": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -537,7 +575,13 @@
               }
             }
           }
-        }
+        },
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "localSession": []
+          }
+        ]
       }
     },
     "/quizzes/{quiz_id}": {
@@ -546,7 +590,7 @@
         "description": "해당 강의 수강생만 조회한다. 정답과 해설을 반환하지 않는다.",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -576,16 +620,22 @@
               "format": "uuid"
             }
           }
+        ],
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "localSession": []
+          }
         ]
       }
     },
     "/quizzes/{quiz_id}/attempts": {
       "post": {
         "operationId": "submitAttempt",
-        "description": "계정 UUID는 JWT에서 읽는다. 서버가 채점하고 현재 학생의 결과만 반환한다.",
+        "description": "강의 학생 전용. 세션 사용자로 서버 채점한다. 게시된 모든 문항에 유효한 보기를 하나씩 제출해야 한다. 학생당 퀴즈 1회 제출. 같은 Idempotency-Key/내용은 기존 결과, 키 재사용/내용 변경 및 새로운 키로 재응시는 409다.",
         "responses": {
           "201": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -634,7 +684,13 @@
               }
             }
           }
-        }
+        },
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "localSession": []
+          }
+        ]
       }
     },
     "/me/attempts": {
@@ -643,7 +699,7 @@
         "description": "본인 제출 결과만 조회한다.",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -665,7 +721,13 @@
               }
             }
           }
-        }
+        },
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "localSession": []
+          }
+        ]
       }
     },
     "/courses/{course_id}/weeks/{week_id}/threads": {
@@ -674,7 +736,7 @@
         "description": "로그인 학생의 질문 스레드를 만들고 처리를 큐에 넣는다. GET으로 결과를 조회한다.",
         "responses": {
           "201": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -742,7 +804,8 @@
               }
             }
           }
-        }
+        },
+        "x-implementation-status": "planned"
       }
     },
     "/threads/{thread_id}": {
@@ -751,7 +814,7 @@
         "description": "질문 소유자 또는 해당 강의 교수만 조회한다.",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -781,7 +844,8 @@
               "format": "uuid"
             }
           }
-        ]
+        ],
+        "x-implementation-status": "planned"
       }
     },
     "/threads/{thread_id}/messages": {
@@ -790,7 +854,7 @@
         "description": "작성자 역할은 서버가 결정한다. awaiting_student의 학생 보완 답변은 재검색·재판단한다. awaiting_professor의 교수 답변은 resolved로 전환한다. 상태·버전 충돌은 409, 잘못된 상태 제출은 422다. 명확하지만 근거 부족이면 교수에게 승격한다. 추가 질문 최대 1회는 트랜잭션으로 보장한다.",
         "responses": {
           "202": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -849,7 +913,8 @@
               }
             }
           }
-        }
+        },
+        "x-implementation-status": "planned"
       }
     },
     "/courses/{course_id}/reports/quizzes": {
@@ -858,7 +923,7 @@
         "description": "교수 전용. 선택 주차 또는 전체 주차. 대상자/재응시 정의는 draft-1에서 미확정이며 첫 계약에서 결정한다. 분모 0이면 비율 null.",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -903,7 +968,8 @@
             },
             "description": "쉼표로 구분한 주차 UUID. 생략하면 전체 주차."
           }
-        ]
+        ],
+        "x-implementation-status": "planned"
       }
     },
     "/courses/{course_id}/reports/qa": {
@@ -912,7 +978,7 @@
         "description": "교수 전용. 선택 주차별 질의 내역. 여러 주차 선택은 week_ids로 지정한다.",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -974,6 +1040,281 @@
             },
             "description": "쉼표로 구분한 주차 UUID. 생략하면 전체 주차."
           }
+        ],
+        "x-implementation-status": "planned"
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health",
+        "x-implementation-status": "implemented",
+        "description": "",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/accounts": {
+      "get": {
+        "operationId": "listDemoAccounts",
+        "x-implementation-status": "implemented",
+        "description": "로컬 체험 계정만 반환. 실제 학생 계정이 아니다.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/login": {
+      "post": {
+        "operationId": "demoLogin",
+        "x-implementation-status": "implemented",
+        "description": "로컬 모드에서만 사용하며 HttpOnly SameSite=Strict 세션 쿠키를 발급한다. 서버는 127.0.0.1에 바인딩된다.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "user_id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "operationId": "getMe",
+        "x-implementation-status": "implemented",
+        "description": "",
+        "security": [
+          {
+            "localSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logout": {
+      "post": {
+        "operationId": "logout",
+        "x-implementation-status": "implemented",
+        "description": "",
+        "security": [
+          {
+            "localSession": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "세션 제거"
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courses/{course_id}/weeks/{week_id}/content": {
+      "get": {
+        "operationId": "getWeekContent",
+        "x-implementation-status": "implemented",
+        "description": "교수는 전체 자료·초안·게시 요약, 학생은 공개 자료·게시 요약만 받는다. 응답의 drafts는 학생에게 빈 배열이다.",
+        "security": [
+          {
+            "localSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeekContent"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "week_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/materials/{material_id}/original": {
+      "get": {
+        "operationId": "getOriginal",
+        "x-implementation-status": "implemented",
+        "description": "교수 또는 원본 공개를 허용한 자료의 수강생만 다운로드한다.",
+        "security": [
+          {
+            "localSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "material_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
         ]
       }
     }
@@ -984,6 +1325,12 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT"
+      },
+      "localSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "campus_session",
+        "description": "로컬 체험 로그인으로만 발급. 공개 서비스 인증으로 사용하지 않는다."
       }
     },
     "schemas": {
@@ -1120,18 +1467,29 @@
             ]
           },
           "error": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Error"
+            "$ref": "#/components/schemas/NullableError"
+          },
+          "result": {
+            "type": "object",
+            "properties": {
+              "material_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "draft_id": {
+                "type": "string",
+                "format": "uuid"
               }
-            ],
+            },
+            "additionalProperties": false,
             "nullable": true
           }
         },
         "required": [
           "job_id",
           "status",
-          "error"
+          "error",
+          "result"
         ],
         "additionalProperties": false
       },
@@ -1341,7 +1699,7 @@
           "wrong_questions": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DraftQuestion"
+              "$ref": "#/components/schemas/WrongQuestion"
             }
           }
         },
@@ -1438,12 +1796,7 @@
             }
           },
           "error": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Error"
-              }
-            ],
-            "nullable": true
+            "$ref": "#/components/schemas/NullableError"
           }
         },
         "required": [
@@ -1539,6 +1892,241 @@
         "required": [
           "course_id",
           "weeks"
+        ],
+        "additionalProperties": false
+      },
+      "NullableError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "retryable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable"
+        ],
+        "additionalProperties": false,
+        "nullable": true
+      },
+      "WrongQuestion": {
+        "type": "object",
+        "properties": {
+          "question_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            }
+          },
+          "correct_option_id": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            }
+          },
+          "selected_option_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "question_id",
+          "prompt",
+          "options",
+          "correct_option_id",
+          "explanation",
+          "sources",
+          "selected_option_id"
+        ],
+        "additionalProperties": false
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "MaterialSummary": {
+        "type": "object",
+        "properties": {
+          "material_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "course_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "week_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slide_start": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "slide_end": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "original_visible_to_students": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "processing",
+              "completed",
+              "failed"
+            ]
+          },
+          "total_slides": {
+            "type": "integer",
+            "minimum": 1,
+            "nullable": true
+          }
+        },
+        "required": [
+          "material_id",
+          "course_id",
+          "week_id",
+          "name",
+          "slide_start",
+          "slide_end",
+          "original_visible_to_students",
+          "status",
+          "total_slides"
+        ],
+        "additionalProperties": false
+      },
+      "WeekContent": {
+        "type": "object",
+        "properties": {
+          "materials": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MaterialSummary"
+            }
+          },
+          "drafts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuizDraft"
+            }
+          },
+          "quizzes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "quiz_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "draft_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "week_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "question_count": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "quiz_id",
+                "draft_id",
+                "week_id",
+                "question_count"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "materials",
+          "drafts",
+          "quizzes"
+        ],
+        "additionalProperties": false
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "local-development"
+            ]
+          },
+          "ai_configured": {
+            "type": "boolean"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "codex",
+              "openai",
+              "gemini"
+            ]
+          },
+          "model": {
+            "type": "string"
+          },
+          "contract_version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "mode",
+          "ai_configured",
+          "provider",
+          "model",
+          "contract_version"
         ],
         "additionalProperties": false
       }

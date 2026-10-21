@@ -23,4 +23,13 @@
 
 ## GitHub 작업 목록
 
-[전체 이슈](https://github.com/2026-sku-campusthon/campus-lms-agent/issues). 생성된 작업 링크는 저장소 초기 구성 후 아래에 기록한다.
+| 이슈 | 역할 | 작업 |
+| --- | --- | --- |
+| [#1](https://github.com/2026-sku-campusthon/campus-lms-agent/issues/1) | A | 플랫폼·인증·강의·DB 계약·통합 |
+| [#2](https://github.com/2026-sku-campusthon/campus-lms-agent/issues/2) | B | 교수·학생 화면 |
+| [#3](https://github.com/2026-sku-campusthon/campus-lms-agent/issues/3) | C | 자료 처리·퀴즈 생성·전사 |
+| [#4](https://github.com/2026-sku-campusthon/campus-lms-agent/issues/4) | D | Q&A·Jev·추가 질문·승격 |
+| [#5](https://github.com/2026-sku-campusthon/campus-lms-agent/issues/5) | A/B/C 통합 | 첫 PDF/PPTX 퀴즈 기능 |
+| [#6](https://github.com/2026-sku-campusthon/campus-lms-agent/issues/6) | 전원 | 권한·레포트·배포·리허설 |
+
+역할 계정은 미배정이다. 실제 상태는 이슈를 따른다. 첫 기능은 [구현 현황](implementation.md)과 [검증 기록](verification.md)을 확인한다.

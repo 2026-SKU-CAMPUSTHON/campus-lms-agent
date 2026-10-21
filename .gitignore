@@ -8,3 +8,8 @@ __pycache__/
 coverage/
 dist/
 *.log
+
+.data/
+playwright-report/
+test-results/
+tests/fixtures/generated/
