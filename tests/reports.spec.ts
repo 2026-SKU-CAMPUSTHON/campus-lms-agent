@@ -15,7 +15,7 @@ test('교수가 주차별 참여율·정답률·Q&A를 조회하고 학생 접�
  const generated=await prof.post(base+'/quiz-drafts',{headers:{'Idempotency-Key':crypto.randomUUID()},data:{material_ids:[receipt.material_id],question_count:2}});expect(generated.status()).toBe(202);
  const job=await generated.json();await expect.poll(async()=>(await(await prof.get('/api/jobs/'+job.job_id)).json()).status).toBe('completed');
  const completed=await(await prof.get('/api/jobs/'+job.job_id)).json();const draft=await(await prof.get('/api/quiz-drafts/'+completed.result.draft_id)).json();
- const published=await prof.post('/api/quiz-drafts/'+draft.draft_id+'/publish',{headers:{'Idempotency-Key':crypto.randomUUID()},data:{question_ids:draft.questions.map((q:{question_id:string})=>q.question_id)}});expect(published.status()).toBe(201);const quiz=await published.json();
+ const published=await prof.post('/api/quiz-drafts/'+draft.draft_id+'/publish',{headers:{'Idempotency-Key':crypto.randomUUID()},data:{expected_version:draft.version,question_ids:draft.questions.map((q:{question_id:string})=>q.question_id)}});expect(published.status()).toBe(201);const quiz=await published.json();
  await request.post('/api/dev/login',{data:{user_id:student}});
  const answer=await request.post(`/api/quizzes/${quiz.quiz_id}/attempts`,{headers:{'Idempotency-Key':crypto.randomUUID()},data:{answers:draft.questions.map((q:{question_id:string},i:number)=>({question_id:q.question_id,option_id:i===0?'a':'b'}))}});expect(answer.status()).toBe(201);expect((await answer.json()).correct_count).toBe(1);
  const asked=await request.post(base+'/threads',{headers:{'Idempotency-Key':crypto.randomUUID()},data:{text:question}});expect(asked.status()).toBe(201);const thread=await asked.json();

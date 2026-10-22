@@ -26,7 +26,7 @@ try {
  const draft=(await professor.get('/api/quiz-drafts/'+job.result.draft_id).expect(200)).body as QuizDraft;
  if(draft.questions.length!==count||draft.questions.some(q=>!q.sources.length||q.sources.some(s=>s.source_type!=='transcript'||s.origin!=='youtube'||s.slide_no!==null||s.start_sec<material.youtube!.start_sec||s.end_sec>(material.youtube!.end_sec??material.duration_sec!))))throw new Error('INVALID_TIME_SOURCE');
  const chosen=draft.questions.slice(0,Math.min(2,count));
- const published=(await professor.post(`/api/quiz-drafts/${draft.draft_id}/publish`).set('Idempotency-Key',run+'-publish').send({question_ids:chosen.map(q=>q.question_id)}).expect(201)).body;
+ const published=(await professor.post(`/api/quiz-drafts/${draft.draft_id}/publish`).set('Idempotency-Key',run+'-publish').send({expected_version:draft.version,question_ids:chosen.map(q=>q.question_id)}).expect(201)).body;
  await student.get('/api/quiz-drafts/'+draft.draft_id).expect(403);await student.get(`/api/materials/${material.material_id}/original`).expect(material.original_visible_to_students?302:403);
  const quiz=(await student.get('/api/quizzes/'+published.quiz_id).expect(200)).body;
  if(quiz.questions.length!==chosen.length||/correct_option_id|explanation|sources/.test(JSON.stringify(quiz)))throw new Error('UNPUBLISHED_QUESTION_OR_ANSWER_LEAK');

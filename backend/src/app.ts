@@ -32,9 +32,11 @@ interface AuthedRequest extends Request { user:User }
 export interface AppOptions { root:string; dataDir:string; demoAuth:boolean; apiKey?:string; model?:string; provider?:Provider; codexBin?:string; generator?:Generator; transcriptGenerator?:TranscriptGenerator; transcriber?:Transcriber; youtubeImporter?:YouTubeImporter; jevApiKey?:string; jevModel?:string; jevMinimum?:number; qaJudge?:Judge; qaGenerator?:QAGenerator; frontendDir?:string }
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 const parse=<T>(row:{data:string}):T=>JSON.parse(row.data) as T;
+const readDraft=(row:{data:string}):QuizDraft=>{const draft=parse<Omit<QuizDraft,'version'>&{version?:number}>(row);return {...draft,version:draft.version??1}};
 const uuid=z.string().uuid();
 const generationRequest=z.object({material_ids:z.array(uuid).min(1).max(5),question_count:z.number().int().min(1).max(50).default(50)}).strict();
-const publishRequest=z.object({question_ids:z.array(uuid).min(1).max(50)}).strict();
+const publishRequest=z.object({question_ids:z.array(uuid).min(1).max(50),expected_version:z.number().int().positive()}).strict();
+const editQuestionRequest=z.object({expected_version:z.number().int().positive(),prompt:z.string().trim().min(1).max(2000),options:z.array(z.object({option_id:z.string().min(1).max(20),text:z.string().trim().min(1).max(1000)}).strict()).length(4),correct_option_id:z.string().min(1).max(20),explanation:z.string().trim().min(1).max(4000)}).strict();
 const attemptRequest=z.object({answers:z.array(z.object({question_id:uuid,option_id:z.string().min(1).max(20)}).strict()).min(1).max(50)}).strict();
 const field=(v:unknown)=>z.string().parse(v);
 
@@ -79,7 +81,7 @@ export function createApp(options:AppOptions) {
     next();
   });
   app.use(express.json({limit:'128kb'}));
-  app.get('/api/health',(_req,res)=>res.json({status:'ok',mode:'local-development',ai_configured:ready,provider,model,contract_version:'0.7.0-youtube-quiz.1',qa_configured:qaReady,jev_configured:Boolean(options.jevApiKey || options.qaJudge),jev_model:options.jevModel || 'jev-1.13.0'}));
+  app.get('/api/health',(_req,res)=>res.json({status:'ok',mode:'local-development',ai_configured:ready,provider,model,contract_version:'0.8.0-draft-edit.1',qa_configured:qaReady,jev_configured:Boolean(options.jevApiKey || options.qaJudge),jev_model:options.jevModel || 'jev-1.13.0'}));
   app.get('/api/dev/accounts',(_req,res)=>res.json(store.all<{user_id:string;name:string}>('SELECT id AS user_id,name FROM users WHERE id != ?',IDS.outsider)));
   app.post('/api/dev/login',(req,res)=> {
     const id=z.object({user_id:uuid}).strict().parse(req.body).user_id;
@@ -148,7 +150,7 @@ export function createApp(options:AppOptions) {
     const course=field(req.params.course_id),week=field(req.params.week_id);weekFor(req,course,week);
     const role=membership(req,course);
     const materials=store.all<Row>('SELECT * FROM materials WHERE course_id=? AND week_id=? ORDER BY rowid DESC',course,week).map(r=>parse<Material>(r)).filter(m=>role==='professor'||m.original_visible_to_students).map(m=>{if(isDocument(m)){const {slides:_slides,file_path:_path,...view}=m;return {...view,source_type:'document' as const}}const {slides:_slides,segments:_segments,file_path:_path,...view}=m;return view});
-    const drafts=role==='professor'?store.all<Row>('SELECT * FROM drafts WHERE course_id=? AND week_id=? ORDER BY rowid DESC',course,week).map(r=>parse<QuizDraft>(r)):[];
+    const drafts=role==='professor'?store.all<Row>('SELECT * FROM drafts WHERE course_id=? AND week_id=? ORDER BY rowid DESC',course,week).map(readDraft):[];
     const quizzes=store.all<Row>('SELECT * FROM quizzes WHERE course_id=? AND week_id=? ORDER BY rowid DESC',course,week).map(r=>{const q=parse<PublicQuiz>(r);return {quiz_id:q.quiz_id,draft_id:r.draft_id!,week_id:q.week_id,question_count:q.questions.length}});
     res.json({materials,drafts,quizzes} satisfies WeekContent);
   });
@@ -205,21 +207,38 @@ export function createApp(options:AppOptions) {
           const generated=await generateAcrossRange(material.slides,body.question_count,generate),chunkIds=new Map(material.slides.map(s=>[s.slide_no,randomUUID()]));
           return generated.map(q=>({...q,sources:[...new Set(q.slide_nos)].map(slide_no=>({material_id:material.material_id,chunk_id:chunkIds.get(slide_no)!,source_type:'document' as const,slide_no,start_sec:null,end_sec:null}))}));
         })();
-        const draft:QuizDraft={draft_id:randomUUID(),week_id:week,questions:questions.map(q=>({question_id:randomUUID(),prompt:q.prompt,options:q.options.map((text,i)=>({option_id:String.fromCharCode(97+i),text})),correct_option_id:String.fromCharCode(97+q.correct_index),explanation:q.explanation,sources:q.sources}))};
+        const draft:QuizDraft={draft_id:randomUUID(),week_id:week,version:1,questions:questions.map(q=>({question_id:randomUUID(),prompt:q.prompt,options:q.options.map((text,i)=>({option_id:String.fromCharCode(97+i),text})),correct_option_id:String.fromCharCode(97+q.correct_index),explanation:q.explanation,sources:q.sources}))};
         store.run('INSERT INTO drafts VALUES (?,?,?,?)',draft.draft_id,course,week,JSON.stringify(draft));return {draft_id:draft.draft_id};
       });return {status:202,body:job};
     });
   });
-  app.get('/api/quiz-drafts/:draft_id',(req,res)=> {const row=resource('drafts',field(req.params.draft_id));membership(req,row.course_id,'professor');res.json(parse<QuizDraft>(row))});
+  app.get('/api/quiz-drafts/:draft_id',(req,res)=> {const row=resource('drafts',field(req.params.draft_id));membership(req,row.course_id,'professor');res.json(readDraft(row))});
+  app.patch('/api/quiz-drafts/:draft_id/questions/:question_id',(req,res)=> {
+    const row=resource('drafts',uuid.parse(req.params.draft_id));membership(req,row.course_id,'professor');const id=uuid.parse(req.params.question_id),body=editQuestionRequest.parse(req.body);
+    idempotent(req,res,()=> {
+      if(store.get('SELECT id FROM quizzes WHERE draft_id=?',row.id))throw new HttpError(409,'ALREADY_PUBLISHED','게시한 초안은 수정할 수 없습니다. 새 초안을 만들어 주세요.');
+      const draft=readDraft(resource('drafts',row.id));
+      if(draft.version!==body.expected_version)throw new HttpError(409,'DRAFT_VERSION_CONFLICT','다른 화면에서 초안이 변경되었습니다. 최신 초안을 확인한 뒤 다시 수정해 주세요.');
+      const question=draft.questions.find(q=>q.question_id===id);if(!question)throw new HttpError(404,'QUESTION_NOT_FOUND','이 초안의 문항을 찾을 수 없습니다.');
+      const optionIds=new Set(question.options.map(o=>o.option_id));
+      if(new Set(body.options.map(o=>o.option_id)).size!==4||body.options.some(o=>!optionIds.has(o.option_id))||!optionIds.has(body.correct_option_id))throw new HttpError(422,'INVALID_OPTIONS','기존 보기 네 개와 올바른 정답을 선택해 주세요.');
+      const texts=body.options.map(o=>o.text.normalize('NFKC').replace(/\s+/g,' ').toLocaleLowerCase());
+      if(new Set(texts).size!==4)throw new HttpError(422,'DUPLICATE_OPTIONS','보기 내용이 서로 겹치지 않도록 수정해 주세요.');
+      const textById=new Map(body.options.map(o=>[o.option_id,o.text]));
+      draft.questions=draft.questions.map(q=>q.question_id===id?{...q,prompt:body.prompt,options:q.options.map(o=>({...o,text:textById.get(o.option_id)!})),correct_option_id:body.correct_option_id,explanation:body.explanation}:q);draft.version++;
+      store.run('UPDATE drafts SET data=? WHERE id=?',JSON.stringify(draft),row.id);return {status:200,body:draft};
+    });
+  });
   app.post('/api/quiz-drafts/:draft_id/publish',(req,res)=> {
     const row=resource('drafts',field(req.params.draft_id));membership(req,row.course_id,'professor');
     const body=publishRequest.parse(req.body);
     if(new Set(body.question_ids).size!==body.question_ids.length) throw new HttpError(422,'DUPLICATE_QUESTION_ID','같은 문항을 중복 선택할 수 없습니다.');
-    const draft=parse<QuizDraft>(row);const selected=new Set(body.question_ids);
-    const questions=draft.questions.filter(q=>selected.has(q.question_id));
-    if(questions.length!==selected.size) throw new HttpError(422,'UNKNOWN_QUESTION','초안에 없는 문항이 포함되어 있습니다.');
     idempotent(req,res,()=> {
       if(store.get('SELECT id FROM quizzes WHERE draft_id=?',row.id)) throw new HttpError(409,'ALREADY_PUBLISHED','이미 게시한 초안입니다. 새 초안을 생성해 주세요.');
+      const draft=readDraft(resource('drafts',row.id));
+      if(draft.version!==body.expected_version)throw new HttpError(409,'DRAFT_VERSION_CONFLICT','다른 화면에서 초안이 변경되었습니다. 최신 초안을 검토한 뒤 게시해 주세요.');
+      const selected=new Set(body.question_ids),questions=draft.questions.filter(q=>selected.has(q.question_id));
+      if(questions.length!==selected.size) throw new HttpError(422,'UNKNOWN_QUESTION','초안에 없는 문항이 포함되어 있습니다.');
       const quiz={quiz_id:randomUUID(),week_id:row.week_id,questions};
       store.run('INSERT INTO quizzes VALUES (?,?,?,?,?)',quiz.quiz_id,row.id,row.course_id,row.week_id,JSON.stringify(quiz));
       return {status:201,body:{quiz_id:quiz.quiz_id,week_id:quiz.week_id}};

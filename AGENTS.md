@@ -1,6 +1,6 @@
 # Campus LMS Agent 작업 지침
 
-이 저장소는 2026-10-31 마감의 4인 프로젝트다. 기획은 `docs/product.md`, 기술 기준은 `docs/architecture.md`, 우선순위는 GitHub 이슈에 있다. PDF/PPTX 퀴즈 첫 기능은 로컬에서 구현되어 있다. Q&A의 Jev 어댑터·추가 질문 1회·교수 답변도 로컬에서 구현했다. 실제 Claude·Jev 흐름도 소수 사례로 확인했다. 교수 주차별 레포트와 녹음·동영상 자동 전사·시간 출처도 로컬에서 구현했다. YouTube 공개 영상의 자막 우선 수집·음성 전사 대체·선택 구간·시간 출처도 구현했다. 같은 YouTube 자료의 퀴즈 생성·검토·선택 게시·학생 오답에도 시간 출처를 보존한다. Supabase 연동은 아직 검증하지 않았다. 구현 현황은 docs/implementation.md를 따른다. 사용자가 명시한 최신 요구를 우선한다.
+이 저장소는 2026-10-31 마감의 4인 프로젝트다. 기획은 `docs/product.md`, 기술 기준은 `docs/architecture.md`, 우선순위는 GitHub 이슈에 있다. PDF/PPTX 퀴즈 첫 기능은 로컬에서 구현되어 있다. Q&A의 Jev 어댑터·추가 질문 1회·교수 답변도 로컬에서 구현했다. 실제 Claude·Jev 흐름도 소수 사례로 확인했다. 교수 주차별 레포트와 녹음·동영상 자동 전사·시간 출처도 로컬에서 구현했다. YouTube 공개 영상의 자막 우선 수집·음성 전사 대체·선택 구간·시간 출처도 구현했다. 같은 YouTube 자료의 퀴즈 생성·검토·선택 게시·학생 오답에도 시간 출처를 보존한다. 교수의 미게시 문제·보기·정답·풀이 직접 수정, 버전 확인 저장·게시도 지원한다. Supabase 연동은 아직 검증하지 않았다. 구현 현황은 docs/implementation.md를 따른다. 사용자가 명시한 최신 요구를 우선한다.
 
 ## 시작과 인계
 
@@ -33,7 +33,7 @@
 ## 계약·재사용·검증
 
 - API: `docs/contracts/openapi.yaml` (JSON으로 작성한 유효 YAML). Worker: `docs/contracts/worker.schema.json`. 변경은 계약·샘플·사용처를 함께 갱신한다.
-- 현재 API 계약은 0.7.0-youtube-quiz.1이며 Worker 큐 계약은 draft-1이다. 새 필드를 몰래 추가하거나 불일치를 타입 캐스팅으로 숨기지 않는다.
+- 현재 API 계약은 0.8.0-draft-edit.1이며 Worker 큐 계약은 draft-1이다. 새 필드를 몰래 추가하거나 불일치를 타입 캐스팅으로 숨기지 않는다.
 - Quizify는 재사용 후보이며 아직 벤더링하지 않았다. 코드를 가져오면 해당 MIT 원문·저작권 고지를 유지하고 기준 커밋을 남긴다.
 - 비밀키·실제 학생 자료·로컬 개인 설정은 커밋하지 않는다. `.env.example`에는 키 이름만 둔다.
 - Node 24.13 이상·Python 3.9 이상. 앱 검증: `npm run typecheck`, `npm test`, `npm run build`, `npm run test:e2e`. Worker PDF 의존성: `worker/requirements.txt`. 실제 모델을 호출하는 검증은 `node --import tsx scripts/verify-live-flow.ts <자료 경로> [문항 수] [시작] [끝]`이며 계정 사용 한도에 영향을 준다.

@@ -1,4 +1,6 @@
-# API 0.7.0-youtube-quiz.1 / Worker 큐 draft-1
+# API 0.8.0-draft-edit.1 / Worker 큐 draft-1
+
+교수의 미게시 문항 수정 PATCH를 구현했다. QuizDraft.version은 필수이며 버전 없는 기존 초안은 1로 해석한다. 수정과 게시에 expected_version·Idempotency-Key를 요구하고 오래된 버전은 409다. 게시 요청의 버전 누락은 422이므로 이전 호출 코드를 함께 갱신해야 한다. 문항·보기 ID·순서와 출처를 보존하고 게시 후 수정은 차단한다. edit-draft-question.json은 합성 샘플이며 [수정 명세](../draft-edit.md)를 따른다.
 
 완료된 YouTube 자료를 기존 quiz-drafts 입력으로 허용한다. DraftQuestion/WrongQuestion/ReportQuestion.sources를 공용 Source(문서 페이지 또는 전사 시간)로 확장하고, youtube-quiz-draft.json·youtube-attempt-result.json을 합성 샘플로 추가했다. 게시 전 PublicQuiz에는 출처·정답·풀이를 넣지 않는다. 실제 시간은 서버의 검증된 근거 ID로 연결하며 모델 생성 시간/URL을 받지 않는다. 기존 문서 형식·선택 게시·서버 채점·개인 결과 계약과 Worker 큐는 유지한다.
 

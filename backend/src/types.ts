@@ -11,7 +11,7 @@ export interface Option { option_id: string; text: string }
 export interface PublicQuestion { question_id: string; prompt: string; options: Option[] }
 export interface DraftQuestion extends PublicQuestion { correct_option_id: string; explanation: string; sources: Source[] }
 export interface GeneratedQuestion { prompt: string; options: string[]; correct_index: number; explanation: string; slide_nos: number[] }
-export interface QuizDraft { draft_id: string; week_id: string; questions: DraftQuestion[] }
+export interface QuizDraft { draft_id: string; week_id: string; version:number; questions: DraftQuestion[] }
 export interface PublicQuiz { quiz_id: string; week_id: string; questions: PublicQuestion[] }
 export interface AttemptResult { attempt_id: string; quiz_id: string; correct_count: number; total_count: number; wrong_questions: (DraftQuestion & {selected_option_id: string})[] }
 export interface Job { job_id: string; status: 'queued' | 'processing' | 'completed' | 'failed'; result: {material_id?: string; draft_id?: string} | null; error: {code: string; message: string; retryable: boolean} | null }

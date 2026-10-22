@@ -29,7 +29,7 @@ async function publish(service:ReturnType<typeof setup>,professor:Awaited<Return
   await service.waitForJobs();const job=await professor.get('/api/jobs/'+receipt.body.job_id).expect(200);
   expect(job.body.status).toBe('completed');
   const draft=(await professor.get('/api/quiz-drafts/'+job.body.result.draft_id).expect(200)).body;
-  const posted=await professor.post(`/api/quiz-drafts/${draft.draft_id}/publish`).set('Idempotency-Key','publish').send({question_ids:draft.questions.slice(0,2).map((q:{question_id:string})=>q.question_id)}).expect(201);
+  const posted=await professor.post(`/api/quiz-drafts/${draft.draft_id}/publish`).set('Idempotency-Key','publish').send({expected_version:draft.version,question_ids:draft.questions.slice(0,2).map((q:{question_id:string})=>q.question_id)}).expect(201);
   return {m,draft,quiz_id:posted.body.quiz_id};
 }
 describe('실제 문서 처리와 퀴즈 전체 흐름 (AI는 주입한 테스트 대역)',()=> {

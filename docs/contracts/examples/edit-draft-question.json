@@ -1,0 +1,24 @@
+{
+  "expected_version": 1,
+  "prompt": "교수가 검토한 합성 문제입니다.",
+  "options": [
+    {
+      "option_id": "a",
+      "text": "항상 0"
+    },
+    {
+      "option_id": "b",
+      "text": "사인과 코사인의 합"
+    },
+    {
+      "option_id": "c",
+      "text": "표본 삭제"
+    },
+    {
+      "option_id": "d",
+      "text": "무작위 복제"
+    }
+  ],
+  "correct_option_id": "b",
+  "explanation": "합성 강의 근거에 따라 B를 정답으로 검토했습니다."
+}

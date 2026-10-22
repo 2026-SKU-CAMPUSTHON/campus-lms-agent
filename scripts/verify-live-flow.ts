@@ -25,7 +25,7 @@ try {
   const draft=(await professor.get('/api/quiz-drafts/'+job.result.draft_id)).body;
   console.log(JSON.stringify({stage:'generation',status:'completed',questions:draft.questions.length,provider}));
   const selected=draft.questions.slice(0,Math.min(5,count));
-  const published=await professor.post('/api/quiz-drafts/'+draft.draft_id+'/publish').set('Idempotency-Key',run+'-publish').send({question_ids:selected.map((q:{question_id:string})=>q.question_id)}).expect(201);
+  const published=await professor.post('/api/quiz-drafts/'+draft.draft_id+'/publish').set('Idempotency-Key',run+'-publish').send({expected_version:draft.version,question_ids:selected.map((q:{question_id:string})=>q.question_id)}).expect(201);
   const student=request.agent(service.app);await student.post('/api/dev/login').send({user_id:IDS.student}).expect(200);
   const quiz=(await student.get('/api/quizzes/'+published.body.quiz_id).expect(200)).body;
   if(/correct_option_id|explanation/.test(JSON.stringify(quiz)))throw new Error('정답 노출');
