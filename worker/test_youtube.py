@@ -39,9 +39,12 @@ class YouTubeTests(unittest.TestCase):
             result = youtube.import_youtube(VIDEO, 732, 800)
             self.assertEqual(result['method'], 'captions')
             audio.assert_not_called()
+        downloader.__enter__.return_value.extract_info.return_value['title'] = ''
         with patch.dict(sys.modules, modules), patch.object(youtube, 'fetch_captions', return_value=None), patch.object(youtube, 'audio_transcript', return_value={'duration_sec': 68, 'language': 'ko', 'segments': captions['segments']}) as audio:
             result = youtube.import_youtube(VIDEO, 732, 800)
             self.assertEqual(result['method'], 'audio')
+            self.assertEqual(result['name'], 'YouTube 강의')
+            self.assertNotIn(VIDEO, result['name'])
             self.assertEqual(result['transcription']['duration_sec'], 1000)
             self.assertEqual(audio.call_args.args[1:3], (732, 800))
 

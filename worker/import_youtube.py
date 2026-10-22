@@ -148,7 +148,7 @@ def import_youtube(video_id, start=0, end=None, model='small', language='auto', 
     except Exception as error:
         raise fetch_error(error)
     duration, selected_end = validate_range(info, video_id, start, end)
-    name = re.sub(r'[\x00-\x1f\x7f]', ' ', info.get('title') or ('YouTube ' + video_id)).strip()[:180]
+    name = re.sub(r'[\x00-\x1f\x7f]', ' ', info.get('title') or 'YouTube 강의').strip()[:180] or 'YouTube 강의'
     try:
         captions = fetch_captions(video_id, start, selected_end)
     except MediaError:
