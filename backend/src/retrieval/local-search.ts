@@ -31,7 +31,7 @@ export function retrieve(materials:Material[],course:string,week:string,query:st
    const add=(part:NonNullable<typeof group>)=> {
     for(let offset=0;offset<part.text.length;offset+=840) {
      const text=part.text.slice(offset,offset+1000).trim();if(!text)continue;
-     candidates.push({source:{material_id:m.material_id,chunk_id:sourceId(m.material_id,`t:${part.start_sec}:${part.end_sec}`,offset),source_type:'transcript',material_name:m.name,media_type:m.source_type,original_visible_to_students:m.original_visible_to_students,slide_no:null,start_sec:part.start_sec,end_sec:part.end_sec},text,score:0});
+     candidates.push({source:{material_id:m.material_id,chunk_id:sourceId(m.material_id,`t:${part.start_sec}:${part.end_sec}`,offset),source_type:'transcript',material_name:m.name,media_type:m.source_type,original_visible_to_students:m.original_visible_to_students,slide_no:null,start_sec:part.start_sec,end_sec:part.end_sec,...(m.youtube?{origin:'youtube' as const}:{})},text,score:0});
     }
    };
    for(const segment of m.segments) {

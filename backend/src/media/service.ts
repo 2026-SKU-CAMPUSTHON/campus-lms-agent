@@ -4,9 +4,10 @@ import type {Store} from '../store.js';
 import {HttpError} from '../errors.js';
 import type {Job,MediaMaterial} from '../types.js';
 import {transcriptionSchema,type Transcriber} from './transcribe.js';
+import {youtubeResultSchema,type YouTubeImporter} from './youtube.js';
 export class MediaService {
  private tail:Promise<void>=Promise.resolve();
- constructor(private store:Store,private transcribe:Transcriber) {
+ constructor(private store:Store,private transcribe:Transcriber,private importYouTube?:YouTubeImporter) {
   for(const row of store.all<{data:string}>('SELECT data FROM materials')) {
    const m=JSON.parse(row.data) as MediaMaterial;
    if(['audio','video'].includes(m.source_type)&&m.status==='failed'&&!m.error) {
@@ -28,7 +29,7 @@ export class MediaService {
  }
  retry(m:MediaMaterial) {
   if(m.status!=='failed'||!m.error?.retryable)throw new HttpError(409,'TRANSCRIPTION_RETRY_UNAVAILABLE','다시 시도할 수 있는 전사 오류가 없습니다.');
-  if(!existsSync(m.file_path))throw new HttpError(404,'MEDIA_FILE_MISSING','원본이 없어 다시 전사할 수 없습니다. 파일을 다시 올려 주세요.');
+  if(!m.youtube&&!existsSync(m.file_path))throw new HttpError(404,'MEDIA_FILE_MISSING','원본이 없어 다시 전사할 수 없습니다. 파일을 다시 올려 주세요.');
   this.capacity();m.job_id=randomUUID();m.status='queued';m.error=null;this.store.transaction(()=>{this.save(m);this.job({job_id:m.job_id,status:'queued',result:null,error:null},m.course_id)});this.schedule(m);return {material_id:m.material_id,job_id:m.job_id,status:'queued' as const};
  }
  private schedule(m:MediaMaterial) {
@@ -36,7 +37,16 @@ export class MediaService {
    await new Promise<void>(resolve=>setImmediate(resolve));
    m.status='processing';this.save(m);this.job({job_id:m.job_id,status:'processing',result:null,error:null},m.course_id);
    try {
-    const result=transcriptionSchema.safeParse(await this.transcribe(m.file_path,m.source_type));
+    let raw;
+    if(m.youtube) {
+     if(!this.importYouTube)throw new HttpError(503,'YOUTUBE_NOT_CONFIGURED','YouTube 가져오기 환경을 확인해 주세요.',true);
+     const fetched=youtubeResultSchema.safeParse(await this.importYouTube(m.youtube));
+     if(!fetched.success)throw new HttpError(502,'INVALID_TRANSCRIPT','YouTube 근거 형식을 확인하지 못했습니다.',true);
+     const end=m.youtube.end_sec??fetched.data.transcription.duration_sec;
+     if(m.youtube.start_sec>=end||end>fetched.data.transcription.duration_sec||fetched.data.transcription.segments.some(s=>s.start_sec<m.youtube!.start_sec||s.end_sec>end))throw new HttpError(502,'INVALID_TRANSCRIPT','YouTube 근거가 선택 구간을 벗어났습니다.',true);
+     m.name=fetched.data.name;m.youtube={...m.youtube,method:fetched.data.method,is_generated:fetched.data.is_generated};raw=fetched.data.transcription;
+    }else raw=await this.transcribe(m.file_path,m.source_type);
+    const result=transcriptionSchema.safeParse(raw);
     if(!result.success)throw new HttpError(502,'INVALID_TRANSCRIPT','전사 결과의 시간 범위를 확인하지 못했습니다.',true);
     Object.assign(m,result.data,{status:'completed',error:null});this.save(m);this.job({job_id:m.job_id,status:'completed',result:{material_id:m.material_id},error:null},m.course_id);
    }catch(error) {

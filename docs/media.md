@@ -2,6 +2,8 @@
 
 API `0.5.0-media.1`. 교수의 **녹음·동영상** 탭에서 주차별 파일을 등록하면 자동으로 전사한다. 완료된 전사만 같은 강의·주차 Q&A의 검색 근거에 포함한다. Claude는 문장을 생성하고 Jev는 명확성·근거 충분성을 판단한다. 전사 모델은 로컬 faster-whisper이며 별도 전사 API 키가 필요하지 않다.
 
+후속 API `0.6.0-youtube.1`은 같은 화면에서 [YouTube 링크 수집](youtube.md)도 제공한다. 이 문서의 파일 업로드·Range 재생 규칙은 로컬 파일에 적용하며 YouTube 원본은 권한 확인 후 302로 원본 시각에 이동한다.
+
 ## 설치와 실행
 
 ffmpeg·ffprobe와 Python 3.9 이상이 필요하다. macOS는 `brew install ffmpeg`, Ubuntu는 `sudo apt-get install ffmpeg`로 설치할 수 있다. 이 앱은 입력 검사와 음성 분리를 위해 두 명령을 직접 사용한다.

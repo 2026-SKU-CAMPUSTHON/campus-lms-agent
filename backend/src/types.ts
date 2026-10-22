@@ -5,7 +5,7 @@ export interface Week { week_id: string; course_id: string; week_no: number; tit
 export interface Slide { slide_no: number; text: string }
 export interface Extraction { total_slides: number; slides: Slide[] }
 export interface DocumentSource { material_id:string;chunk_id:string;source_type:'document';slide_no:number;start_sec:null;end_sec:null;material_name?:string }
-export interface TranscriptSource {material_id:string;chunk_id:string;source_type:'transcript';slide_no:null;start_sec:number;end_sec:number;material_name:string;media_type:'audio'|'video';original_visible_to_students:boolean}
+export interface TranscriptSource {material_id:string;chunk_id:string;source_type:'transcript';slide_no:null;start_sec:number;end_sec:number;material_name:string;media_type:'audio'|'video';original_visible_to_students:boolean;origin?:'youtube'}
 export type Source=DocumentSource|TranscriptSource;
 export interface Option { option_id: string; text: string }
 export interface PublicQuestion { question_id: string; prompt: string; options: Option[] }
@@ -17,7 +17,8 @@ export interface AttemptResult { attempt_id: string; quiz_id: string; correct_co
 export interface Job { job_id: string; status: 'queued' | 'processing' | 'completed' | 'failed'; result: {material_id?: string; draft_id?: string} | null; error: {code: string; message: string; retryable: boolean} | null }
 export interface DocumentMaterial {source_type?:'document'; material_id: string; course_id: string; week_id: string; name: string; slide_start: number; slide_end: number; original_visible_to_students: boolean; status: Job['status']; total_slides: number | null; slides: Slide[]; file_path: string }
 export interface TranscriptSegment {start_sec:number;end_sec:number;text:string}
-export interface MediaMaterial {material_id:string;course_id:string;week_id:string;name:string;source_type:'audio'|'video';original_visible_to_students:boolean;status:Job['status'];file_path:string;slide_start:null;slide_end:null;total_slides:null;slides:[];duration_sec:number|null;language:string|null;segments:TranscriptSegment[];job_id:string;error:Job['error']}
+export interface YouTubeOrigin {video_id:string;url:string;start_sec:number;end_sec:number|null;method:'captions'|'audio'|null;is_generated:boolean|null}
+export interface MediaMaterial {material_id:string;course_id:string;week_id:string;name:string;source_type:'audio'|'video';original_visible_to_students:boolean;status:Job['status'];file_path:string;slide_start:null;slide_end:null;total_slides:null;slides:[];duration_sec:number|null;language:string|null;segments:TranscriptSegment[];job_id:string;error:Job['error'];youtube?:YouTubeOrigin}
 export type Material=DocumentMaterial|MediaMaterial;
 export function isDocument(material:Material):material is DocumentMaterial {return !material.source_type||material.source_type==='document'}
 export type MediaSummary=Omit<MediaMaterial,'slides'|'segments'|'file_path'>;

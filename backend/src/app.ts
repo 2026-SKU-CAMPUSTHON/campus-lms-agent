@@ -16,6 +16,7 @@ import {DEFAULT_CLAUDE_MODEL} from './ai/claude-json.js';
 import type {Provider} from './ai/config.js';
 import {mountMedia} from './media/routes.js';
 import type {Transcriber} from './media/transcribe.js';
+import type {YouTubeImporter} from './media/youtube.js';
 import {isDocument} from './types.js';
 import {mountReports} from './reports/routes.js';
 import {QAService} from './qa/service.js';
@@ -27,7 +28,7 @@ import type { AttemptResult, Course, DraftQuestion, Job, Material, PublicQuiz, Q
 
 interface Row { id:string; course_id:string; week_id:string; data:string; draft_id?:string }
 interface AuthedRequest extends Request { user:User }
-export interface AppOptions { root:string; dataDir:string; demoAuth:boolean; apiKey?:string; model?:string; provider?:Provider; codexBin?:string; generator?:Generator; transcriber?:Transcriber; jevApiKey?:string; jevModel?:string; jevMinimum?:number; qaJudge?:Judge; qaGenerator?:QAGenerator; frontendDir?:string }
+export interface AppOptions { root:string; dataDir:string; demoAuth:boolean; apiKey?:string; model?:string; provider?:Provider; codexBin?:string; generator?:Generator; transcriber?:Transcriber; youtubeImporter?:YouTubeImporter; jevApiKey?:string; jevModel?:string; jevMinimum?:number; qaJudge?:Judge; qaGenerator?:QAGenerator; frontendDir?:string }
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 const parse=<T>(row:{data:string}):T=>JSON.parse(row.data) as T;
 const uuid=z.string().uuid();
@@ -76,7 +77,7 @@ export function createApp(options:AppOptions) {
     next();
   });
   app.use(express.json({limit:'128kb'}));
-  app.get('/api/health',(_req,res)=>res.json({status:'ok',mode:'local-development',ai_configured:ready,provider,model,contract_version:'0.5.0-media.1',qa_configured:qaReady,jev_configured:Boolean(options.jevApiKey || options.qaJudge),jev_model:options.jevModel || 'jev-1.13.0'}));
+  app.get('/api/health',(_req,res)=>res.json({status:'ok',mode:'local-development',ai_configured:ready,provider,model,contract_version:'0.6.0-youtube.1',qa_configured:qaReady,jev_configured:Boolean(options.jevApiKey || options.qaJudge),jev_model:options.jevModel || 'jev-1.13.0'}));
   app.get('/api/dev/accounts',(_req,res)=>res.json(store.all<{user_id:string;name:string}>('SELECT id AS user_id,name FROM users WHERE id != ?',IDS.outsider)));
   app.post('/api/dev/login',(req,res)=> {
     const id=z.object({user_id:uuid}).strict().parse(req.body).user_id;
@@ -173,6 +174,7 @@ export function createApp(options:AppOptions) {
     const row=resource('materials',field(req.params.material_id)),m=parse<Material>(row);
     const role=membership(req,row.course_id);
     if(role!=='professor' && !m.original_visible_to_students) throw new HttpError(403,'PRIVATE_MATERIAL','교수님이 비공개로 설정한 자료입니다.');
+    if(m.status==='completed'&&!isDocument(m)&&m.youtube){res.redirect(302,`https://www.youtube.com/watch?v=${m.youtube.video_id}&t=${m.youtube.start_sec}s`);return}
     if(m.status!=='completed' || !existsSync(m.file_path)) throw new HttpError(404,'NOT_FOUND','원본을 내려받을 수 없습니다.');
     res.download(m.file_path,m.name);
   });
@@ -238,7 +240,7 @@ export function createApp(options:AppOptions) {
   app.get('/api/me/attempts',(req,res)=>res.json(store.all<Row>('SELECT * FROM attempts WHERE user_id=? ORDER BY rowid DESC',current(req).user_id).map(r=>parse<AttemptResult>(r))));
   mountQA(app,qa,{current,membership,weekFor,idempotent});
   mountReports(app,store,{membership,viewThread:thread=>qa.public(thread)});
-  const media=mountMedia(app,store,options.root,options.dataDir,{membership,weekFor},options.transcriber);
+  const media=mountMedia(app,store,options.root,options.dataDir,{membership,weekFor},options.transcriber,options.youtubeImporter);
   app.use('/api',(_req,_res,next)=>next(new HttpError(404,'NOT_FOUND','API 경로를 찾을 수 없습니다.')));
   if(options.frontendDir && existsSync(resolve(options.frontendDir,'index.html'))) app.use(express.static(options.frontendDir));
   app.use((error:unknown,_req:Request,res:Response,_next:NextFunction)=> {

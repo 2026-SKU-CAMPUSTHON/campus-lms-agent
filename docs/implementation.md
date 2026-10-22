@@ -17,7 +17,7 @@ Supabase 설정이 없어 첫 기능은 로컬 SQLite 저장 어댑터로 실행
 
 ## 구현 계약
 
-계약 버전은 `0.5.0-media.1`이다. `openapi.yaml`에서 `x-implementation-status`로 구현된 API와 후속 계획 API를 구분한다. 구현된 로컬 API는 세션 쿠키를 사용하고, 후속 Supabase API는 JWT 설계로 남긴다.
+계약 버전은 `0.6.0-youtube.1`이다. `openapi.yaml`에서 `x-implementation-status`로 구현된 API와 후속 계획 API를 구분한다. 구현된 로컬 API는 세션 쿠키를 사용하고, 후속 Supabase API는 JWT 설계로 남긴다.
 
 Worker JSON 스키마 draft-1은 향후 작업 큐 통합 계약이다. 현재 CLI 프로세스는 `document_extract.py <파일> <시작> <끝>`으로 `{total_slides, slides:[{slide_no,text}]}`를 반환한다. 장기 키·서명 URL은 결과에 포함하지 않는다.
 
@@ -69,3 +69,11 @@ backend/src/reports/에서 저장된 퀴즈와 Q&A를 집계한다. 현재 수�
 기존 문서는 source_type이 없어도 document로 해석한다. 완료된 전사만 같은 강의·주차의 단어 검색에 포함하고 인접 구간을 1,000자·60초 안에서 묶는다. 문서 페이지와 전사 시간은 타입·계약으로 구분한다. Q&A·레포트는 시간 출처를 보여주고 권한이 있을 때만 재생기를 제공한다. 원본 비공개와 Q&A 처리 허용을 분리한다.
 
 현재 전사는 로컬 프로세스 직렬 처리이며 Supabase 큐·lease·다중 서버를 구현한 것은 아니다. 기본 설정·크기·시간·정확도 제약은 [미디어 명세](media.md)를 따른다.
+
+## YouTube 링크 수집
+
+같은 교수 화면에서 YouTube 링크와 선택 시간을 등록하면 기존 MediaService 직렬 큐에 source_type=video 및 youtube 메타데이터로 저장한다. Python은 고정한 영상 ID의 메타데이터를 검사하고 youtube-transcript-api로 자막을 먼저 가져온다. 자막을 가져올 수 없으면 yt-dlp로 최대 500MB 음성을 임시 다운로드하고 선택 구간을 faster-whisper로 전사한다. 원본 전체 길이는 120분 이하여야 한다.
+
+링크의 t/start 시각과 선택 범위를 보존하며 ASR의 상대 시간을 원본 절대 시간으로 환산한다. 완료 전/실패 자료와 범위 밖 결과는 검색하지 않는다. Source.origin=youtube를 Q&A·레포트에 보존하고, 비공개 학생에게 영상 ID/URL을 반환하지 않는다. 권한 있는 원본 재생은 앱의 playback/original에서 302로 정규 YouTube 시작 시각에 이동한다. 파일 재생·Range와 구분한다.
+
+yt-dlp는 선택한 고정 URL과 Node 런타임을 사용하며 사용자 URL을 셸에 넘기지 않는다. 쿠키/계정/프록시로 제한을 우회하지 않는다. 실제 수집·ASR과 자동 검사 대역은 [검증 기록](verification.md), 의존성·전체 제한은 [YouTube 명세](youtube.md)를 따른다. Supabase 큐 계약을 구현한 것은 아니다.

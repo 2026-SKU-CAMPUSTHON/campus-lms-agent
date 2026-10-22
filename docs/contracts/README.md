@@ -1,4 +1,6 @@
-# API 0.5.0-media.1 / Worker 큐 draft-1
+# API 0.6.0-youtube.1 / Worker 큐 draft-1
+
+YouTube JSON 등록 API를 추가하고 MediaMaterialSummary의 선택적 youtube 메타데이터와 TranscriptSource.origin을 확장했다. 전체 길이와 선택 구간, 링크 시간 처리, 캡션/ASR 방식, 공개 권한·302 원본 이동은 [YouTube 명세](../youtube.md)를 따른다. 기존 미디어·문서 응답과 Worker 큐 계약은 유지한다. youtube-request.json·qa-youtube.json은 합성 계약 샘플이며 실제 자막/강의 내용이 아니다.
 
 API의 구현된 첫 기능은 x-implementation-status=implemented로 표시한다. planned는 아직 구현되지 않은 계약이다. 로컬 구현은 세션 쿠키, 후속 Supabase 구현은 JWT를 사용한다. Worker 큐 계약은 초안이다. `openapi.yaml`은 JSON 문법으로 작성한 유효 YAML이다.
 
