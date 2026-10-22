@@ -1,23 +1,23 @@
 # 구현 현황
 
-2026-10-21 기준. 전체 목표 아키텍처와 현재 구현을 구분한다.
+2026-10-22 기준. 전체 목표 아키텍처와 현재 구현을 구분한다.
 
 | 구성 | 현재 구현 | 다음 단계 |
 | --- | --- | --- |
-| 웹 | React·Vite·TypeScript, 교수/학생 화면·Q&A·주차별 레포트 | 실제 계정·강의 관리 화면 |
+| 웹 | React·Vite·TypeScript, 실제 로그인/초대 가입·강의 생성·팀원 초대, 교수/학생 퀴즈·Q&A·PDF | 원격 환경 접속 검증 |
 | API | Express, 강의별 권한, 비공개 자료, 선택 게시, 서버 채점, 개인 결과 | 실제 강의 관리 |
 | 자료 처리 | Python 별도 프로세스, PDF(pypdf)·PPTX(OOXML), 페이지 순서·범위 보존 | Docling/OCR·벡터 색인 |
 | 모델 | 기본 Claude API(퀴즈·Q&A), 선택적 Codex CLI 및 이전 퀴즈용 OpenAI·Gemini 어댑터 | 배포 환경의 운영·예산 관리 |
 | Q&A 판단 | 공식 TypeSafe SDK Jev 어댑터·단어 검색·추가 질문 1회·교수 답변 | 한국어 경계 사례 확장 평가·벡터 검색 |
-| 인증 | 서버 세션·체험 계정, 강의 권한 검증, 로컬 주소 제한 | Supabase Auth JWT·실제 수강생 관리 |
-| 저장 | 로컬 SQLite·비공개 파일 디렉터리, 재시작 보존 | Supabase PostgreSQL/Storage·RLS |
+| 인증 | 이메일·비밀번호(scrypt), 서버 세션, 단일 사용 초대, 강의 권한 검사 | 학교 SSO·이메일 인증/재설정 |
+| 저장 | MySQL 8.4·번호별 마이그레이션·비공개 영구 파일 볼륨. SQLite는 로컬 체험용 유지 | 원격 백업·복구 검증 |
 | 작업 | DB 상태 저장·비동기 처리, 재시작 시 중단 작업 실패 표시 | 다중 Worker의 lease·재확보·재시도 |
 
-Supabase 설정이 없어 첫 기능은 로컬 SQLite 저장 어댑터로 실행한다. 실제 학생 대상 배포가 가능하다는 뜻이 아니다. 모델 호출은 서버 코드의 생성 함수로 분리해 사용한다. 실행 코드에 테스트 대역으로 자동 대체하는 경로는 없다.
+사용자 결정으로 Supabase 대신 MySQL을 사용한다. `ENABLE_DEMO_AUTH=false`와 `MYSQL_URL`로 실제 계정 모드를 실행한다. Oracle용 Docker·Caddy·MySQL 구성은 준비했으며 원격 배포는 접속 정보가 준비되면 확인한다. 모델 호출은 서버 코드의 생성 함수로 분리해 사용한다. 실행 코드에 테스트 대역으로 자동 대체하는 경로는 없다.
 
 ## 구현 계약
 
-계약 버전은 `0.10.0-student-report.1`이다. `openapi.yaml`에서 `x-implementation-status`로 구현된 API와 후속 계획 API를 구분한다. 구현된 로컬 API는 세션 쿠키를 사용하고, 후속 Supabase API는 JWT 설계로 남긴다.
+계약 버전은 `0.11.0-mysql-auth.1`이다. `openapi.yaml`에서 `x-implementation-status`로 구현된 API와 후속 계획 API를 구분한다. 개발은 campus_session, HTTPS 배포는 __Host-campus_session 서버 세션 쿠키를 사용한다. JWT·Supabase Auth는 사용하지 않는다.
 
 Worker JSON 스키마 draft-1은 향후 작업 큐 통합 계약이다. 현재 CLI 프로세스는 `document_extract.py <파일> <시작> <끝>`으로 `{total_slides, slides:[{slide_no,text}]}`를 반환한다. 장기 키·서명 URL은 결과에 포함하지 않는다.
 
@@ -100,3 +100,9 @@ API 0.10.0-student-report.1의 교수 전용 reports/pdf는 선택 주차의 퀴
 ## 학생 개인 오답 PDF
 
 API 0.10.0-student-report.1은 학생 전용 wrong-answers JSON/PDF를 제공한다. 서버 세션의 학생·강의·선택 주차로 본인의 저장 제출을 제한하고 오답 스냅샷만 직렬화한다. 미응시/모두 정답을 구분하며 PDF에 내 선택·정답·풀이·페이지/시간 출처를 담는다. 기존 ReportLab 레이아웃·글꼴·실행/크기/동시성 제한을 공유하며 학생 머리글·페이지 번호·개인 요약을 사용한다. 교수 다운로드와 학생 다운로드는 공용 프런트엔드 훅으로 진행/오류/중단을 처리한다. [명세](reports.md#학생-개인-오답-레포트)를 따른다.
+
+## MySQL 실제 계정과 배포 구성
+
+API 0.11.0-mysql-auth.1에서 이메일·비밀번호 로그인, 서버 bootstrap 교수 계정, 초대 가입/강의 참여, 교수·학생 초대 발급, 교수의 강의 생성/참여자 조회를 구현했다. MySQL migrations·연결 풀·동일 연결 트랜잭션·커밋 후 작업 실행을 연결하고 자료·퀴즈·답안·Q&A·레포트의 SQL을 비동기로 전환했다. SQLite는 체험 및 기존 회귀 검사에만 유지한다.
+
+Oracle Ubuntu용 Docker·Compose·Caddy HTTPS·비공개 영구 볼륨·SSH 배포/백업 스크립트를 추가했다. 배포 모드에서는 SQLite·체험 로그인·HTTP APP_ORIGIN을 거부한다. 현재 앱 큐는 한 프로세스이므로 MySQL runtime lock으로 중복 실행을 막는다. 학교 SSO·이메일 인증/재설정·자동 다중 Worker 복구·원격 백업 검증은 포함하지 않는다. [운영/설정 안내](deployment.md)를 따른다. 원격 서버 검증은 로컬 MySQL·자동 검사 성공과 별도로 기록한다.

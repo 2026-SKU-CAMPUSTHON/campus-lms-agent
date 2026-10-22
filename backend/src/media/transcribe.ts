@@ -1,3 +1,4 @@
+import {workerEnvironment} from '../worker-env.js';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {resolve} from 'node:path';
@@ -18,8 +19,7 @@ export type Transcriber=(file:string,sourceType:'audio'|'video')=>Promise<Transc
 const safeError=z.object({code:z.enum(['MEDIA_NOT_CONFIGURED','INVALID_MEDIA','NO_AUDIO','MEDIA_TOO_LONG','AUDIO_DECODE_FAILED','INVALID_TRANSCRIPT','TRANSCRIPT_TOO_LARGE','NO_SPEECH','TRANSCRIPTION_MODEL_FAILED','TRANSCRIPTION_FAILED']),error:z.string().max(250)});
 export function createTranscriber(root:string,dataDir:string):Transcriber {
  return async(file,sourceType)=> {
-  const env={...process.env,HF_HUB_DISABLE_TELEMETRY:'1',HF_HUB_DISABLE_PROGRESS_BARS:'1',HF_HUB_DISABLE_XET:'1'};
-  for(const key of ['ANTHROPIC_API_KEY','OPENAI_API_KEY','TYPESAFE_API_KEY','CODEX_API_KEY','GEMINI_API_KEY','SUPABASE_SERVICE_ROLE_KEY'])delete env[key as keyof typeof env];
+  const env={...workerEnvironment(),HF_HUB_DISABLE_TELEMETRY:'1',HF_HUB_DISABLE_PROGRESS_BARS:'1',HF_HUB_DISABLE_XET:'1'};
   try {
    const {stdout}=await exec(process.env.PYTHON_BIN || 'python3',[resolve(root,'worker/transcribe_media.py'),file,'--source-type',sourceType,'--model',process.env.WHISPER_MODEL || 'small','--language',process.env.WHISPER_LANGUAGE || 'auto','--cache-dir',process.env.WHISPER_CACHE_DIR?resolve(root,process.env.WHISPER_CACHE_DIR):resolve(dataDir,'models'),'--ffmpeg',process.env.FFMPEG_BIN || 'ffmpeg','--ffprobe',process.env.FFPROBE_BIN || 'ffprobe'],{timeout:3600000,maxBuffer:8*1024*1024,killSignal:'SIGKILL',env});
    const parsed=transcriptionSchema.safeParse(JSON.parse(stdout));

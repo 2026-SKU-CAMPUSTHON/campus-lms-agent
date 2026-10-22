@@ -1,0 +1,2 @@
+import {defineConfig} from '@playwright/test';
+export default defineConfig({testDir:'tests',testMatch:'mysql-auth.ui.ts',workers:1,retries:0,timeout:60000,use:{baseURL:'http://127.0.0.1:5175',headless:true,trace:'retain-on-failure'},webServer:[{command:'node --import tsx tests/serve-mysql.ts',url:'http://127.0.0.1:3101/api/health',reuseExistingServer:false,timeout:30000},{command:'npm run dev -w frontend -- --port 5175',env:{VITE_API_PROXY_TARGET:'http://127.0.0.1:3101'},url:'http://127.0.0.1:5175',reuseExistingServer:false,timeout:30000}]});

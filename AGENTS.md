@@ -1,6 +1,6 @@
 # Campus LMS Agent 작업 지침
 
-이 저장소는 2026-10-31 마감의 4인 프로젝트다. 기획은 `docs/product.md`, 기술 기준은 `docs/architecture.md`, 우선순위는 GitHub 이슈에 있다. PDF/PPTX 퀴즈 첫 기능은 로컬에서 구현되어 있다. Q&A의 Jev 어댑터·추가 질문 1회·교수 답변도 로컬에서 구현했다. 실제 Claude·Jev 흐름도 소수 사례로 확인했다. 교수 주차별 레포트와 녹음·동영상 자동 전사·시간 출처도 로컬에서 구현했다. YouTube 공개 영상의 자막 우선 수집·음성 전사 대체·선택 구간·시간 출처도 구현했다. 같은 YouTube 자료의 퀴즈 생성·검토·선택 게시·학생 오답에도 시간 출처를 보존한다. 교수의 미게시 문제·보기·정답·풀이 직접 수정, 버전 확인 저장·게시도 지원한다. 선택 주차의 퀴즈·Q&A 전체 대화를 교수 전용 PDF로 다운로드한다. 학생도 본인의 제출 결과 중 오답·선택 답·정답·풀이를 강의 주차별로 조회/PDF 다운로드한다. Supabase 연동은 아직 검증하지 않았다. 구현 현황은 docs/implementation.md를 따른다. 사용자가 명시한 최신 요구를 우선한다.
+이 저장소는 2026-10-31 마감의 4인 프로젝트다. 기획은 `docs/product.md`, 기술 기준은 `docs/architecture.md`, 우선순위는 GitHub 이슈에 있다. PDF/PPTX 퀴즈 첫 기능은 로컬에서 구현되어 있다. Q&A의 Jev 어댑터·추가 질문 1회·교수 답변도 로컬에서 구현했다. 실제 Claude·Jev 흐름도 소수 사례로 확인했다. 교수 주차별 레포트와 녹음·동영상 자동 전사·시간 출처도 로컬에서 구현했다. YouTube 공개 영상의 자막 우선 수집·음성 전사 대체·선택 구간·시간 출처도 구현했다. 같은 YouTube 자료의 퀴즈 생성·검토·선택 게시·학생 오답에도 시간 출처를 보존한다. 교수의 미게시 문제·보기·정답·풀이 직접 수정, 버전 확인 저장·게시도 지원한다. 선택 주차의 퀴즈·Q&A 전체 대화를 교수 전용 PDF로 다운로드한다. 학생도 본인의 제출 결과 중 오답·선택 답·정답·풀이를 강의 주차별로 조회/PDF 다운로드한다. 사용자 결정으로 Supabase 대신 MySQL 8.4·서버 세션 인증을 사용한다. 실제 MySQL 로컬 검증과 Oracle 원격 배포 상태는 docs/verification.md를 구분해서 따른다. 구현 현황은 docs/implementation.md를 따른다. 사용자가 명시한 최신 요구를 우선한다.
 
 ## 시작과 인계
 
@@ -12,7 +12,7 @@
 
 ## 역할과 수정 범위
 
-- A 플랫폼·통합: `supabase/`, `backend/src/auth/`, `backend/src/courses/`, `backend/src/reports/`, 공용 설정·배포·계약 통합.
+- A 플랫폼·통합: `mysql/`, `backend/src/auth/`, `backend/src/courses/`, `backend/src/reports/`, 공용 설정·배포·계약 통합.
 - B 웹: `frontend/`. 확정 전에는 계약 샘플을 사용한다.
 - C 자료·퀴즈 AI: `worker/`, `backend/src/quiz-generation/`, 자료 색인 모듈.
 - D Q&A·Jev: `backend/src/qa/`, `backend/src/retrieval/`, Q&A 평가 자료.
@@ -33,10 +33,10 @@
 ## 계약·재사용·검증
 
 - API: `docs/contracts/openapi.yaml` (JSON으로 작성한 유효 YAML). Worker: `docs/contracts/worker.schema.json`. 변경은 계약·샘플·사용처를 함께 갱신한다.
-- 현재 API 계약은 0.10.0-student-report.1이며 Worker 큐 계약은 draft-1이다. 새 필드를 몰래 추가하거나 불일치를 타입 캐스팅으로 숨기지 않는다.
+- 현재 API 계약은 0.11.0-mysql-auth.1이며 Worker 큐 계약은 draft-1이다. 새 필드를 몰래 추가하거나 불일치를 타입 캐스팅으로 숨기지 않는다.
 - Quizify는 재사용 후보이며 아직 벤더링하지 않았다. 코드를 가져오면 해당 MIT 원문·저작권 고지를 유지하고 기준 커밋을 남긴다.
 - 비밀키·실제 학생 자료·로컬 개인 설정은 커밋하지 않는다. `.env.example`에는 키 이름만 둔다.
 - Node 24.13 이상·Python 3.9 이상. 앱 검증: `npm run typecheck`, `npm test`, `npm run build`, `npm run test:e2e`. Worker PDF 의존성: `worker/requirements.txt`. 실제 모델을 호출하는 검증은 `node --import tsx scripts/verify-live-flow.ts <자료 경로> [문항 수] [시작] [끝]`이며 계정 사용 한도에 영향을 준다.
-- 현재 앱은 로컬 개발 전용이며 기본 `AI_PROVIDER=claude`는 Anthropic API 키가 필요하다. `AI_PROVIDER=codex`는 선택적인 로컬 로그인 모드다. 실제 배포 전 Supabase Auth/DB를 연결한다. CLI에 학생 입력을 셸 명령으로 전달하거나 위험 우회 플래그를 사용하지 않는다.
+- 로컬 체험 모드는 개발용이며 기본 `AI_PROVIDER=claude`는 Anthropic API 키가 필요하다. `AI_PROVIDER=codex`는 선택적인 로컬 로그인 모드다. 실제 배포는 MySQL·HTTPS APP_ORIGIN·ENABLE_DEMO_AUTH=false와 영구 파일 볼륨을 요구한다. docs/deployment.md와 Oracle 서버 설정을 따른다. CLI에 학생 입력을 셸 명령으로 전달하거나 위험 우회 플래그를 사용하지 않는다.
 - 계약 검증 명령: `python -m pip install -r requirements-contracts.txt`, `python scripts/check_contracts.py`.
 - 구현 PR에서는 해당 변경의 실행 명령과 실제 결과를 기록한다. 실행하지 않은 검사·모델 평가·배포를 완료라고 쓰지 않는다. 초기 계약 검증 통과를 앱 완성으로 취급하지 않는다.

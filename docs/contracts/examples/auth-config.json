@@ -1,0 +1,5 @@
+{
+  "mode": "password",
+  "registration": "invite",
+  "password_min_length": 12
+}

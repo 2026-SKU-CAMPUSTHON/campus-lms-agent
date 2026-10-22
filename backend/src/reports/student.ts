@@ -1,4 +1,4 @@
-import type {Store} from '../store.js';
+import type {Database} from '../database.js';
 import type {AttemptResult,PublicQuiz,User,Week} from '../types.js';
 import {HttpError} from '../errors.js';
 import type {StudentWrongAttempt,StudentWrongMetrics,StudentWrongReport,StudentWrongWeek} from './types.js';
@@ -8,10 +8,10 @@ function metrics(attempts:StudentWrongAttempt[]):StudentWrongMetrics {
  return {submission_count:attempts.length,total_count,correct_count,wrong_count:attempts.reduce((n,a)=>n+a.wrong_questions.length,0),correct_rate:total_count?correct_count/total_count:null};
 }
 /** Identity comes from the session; only persisted, completed submissions are read. */
-export function studentWrongReport(store:Store,course:string,weeks:Week[],user:User):StudentWrongReport {
+export async function studentWrongReport(store:Database,course:string,weeks:Week[],user:User):Promise<StudentWrongReport> {
  const ids=weeks.map(w=>w.week_id),slots=ids.map(()=>'?').join(',');
- const rows=ids.length?store.all<AttemptRow>(`SELECT a.data,q.data AS quiz_data,q.id AS quiz_id,q.week_id FROM attempts a JOIN quizzes q ON q.id=a.quiz_id WHERE a.user_id=? AND q.course_id=? AND q.week_id IN (${slots}) ORDER BY a.rowid`,user.user_id,course,...ids):[];
- const quizOrder=store.all<{id:string;week_id:string}>('SELECT id,week_id FROM quizzes WHERE course_id=? ORDER BY rowid',course);
+ const rows=ids.length?(await store.all<AttemptRow>(`SELECT a.data,q.data AS quiz_data,q.id AS quiz_id,q.week_id FROM attempts a JOIN quizzes q ON q.id=a.quiz_id WHERE a.user_id=? AND q.course_id=? AND q.week_id IN (${slots}) ORDER BY a.rowid`,user.user_id,course,...ids)):[];
+ const quizOrder=(await store.all<{id:string;week_id:string}>('SELECT id,week_id FROM quizzes WHERE course_id=? ORDER BY rowid',course));
  const result:StudentWrongWeek[]=weeks.map(week=> {
   const order=quizOrder.filter(q=>q.week_id===week.week_id);
   const attempts:StudentWrongAttempt[]=rows.filter(a=>a.week_id===week.week_id).map(row=> {

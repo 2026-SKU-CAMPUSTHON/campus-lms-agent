@@ -1,0 +1,66 @@
+name: campus-lms
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: campus
+      MYSQL_USER: campus
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env.production}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env.production}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysql --user=$$MYSQL_USER --database=$$MYSQL_DATABASE --execute='SELECT 1' --silent >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    mem_limit: 2g
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      ENABLE_DEMO_AUTH: "false"
+      APP_ORIGIN: https://${APP_HOST:?Set APP_HOST to the site hostname}
+      MYSQL_URL: mysql://campus:${MYSQL_PASSWORD}@mysql:3306/campus
+      DATA_DIR: /data
+      AI_PROVIDER: claude
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-5-5}
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}
+      JEV_MODEL: ${JEV_MODEL:-jev-1.13.0}
+      JEV_MIN_CONFIDENCE: ${JEV_MIN_CONFIDENCE:-0.75}
+      WHISPER_MODEL: ${WHISPER_MODEL:-small}
+      BOOTSTRAP_EMAIL: ${BOOTSTRAP_EMAIL:-}
+      BOOTSTRAP_PASSWORD: ${BOOTSTRAP_PASSWORD:-}
+      BOOTSTRAP_NAME: ${BOOTSTRAP_NAME:-담당 교수}
+      BOOTSTRAP_COURSE: ${BOOTSTRAP_COURSE:-팀 테스트 강의}
+    volumes:
+      - app_data:/data
+    expose: ["3000"]
+    init: true
+    stop_grace_period: 70s
+    mem_limit: 4g
+  caddy:
+    image: caddy:2.11
+    restart: unless-stopped
+    depends_on: [app]
+    environment:
+      APP_HOST: ${APP_HOST}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    mem_limit: 256m
+volumes:
+  mysql_data:
+  app_data:
+  caddy_data:
+  caddy_config:

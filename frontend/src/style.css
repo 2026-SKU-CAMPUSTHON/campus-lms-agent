@@ -23,3 +23,13 @@
 .question-card>h3,.question-card details>p,.review-options>div,.explanation p,.solve-card legend,.answer-option{white-space:pre-wrap;overflow-wrap:anywhere}
 
 .report-control-actions{display:flex;flex-wrap:wrap;gap:8px}.report-control-actions button{white-space:nowrap}@media(max-width:640px){.report-control-actions{width:100%}.report-control-actions button{flex:1}}
+
+.auth-form {display:grid;gap:16px;margin-top:24px}
+.auth-switch {margin-top:20px}
+.course-access {margin-bottom:24px}
+.course-access summary {cursor:pointer;font-weight:700}
+.course-access-body {display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;margin-top:20px}
+.course-access-body form {display:flex;flex-direction:column;gap:12px;min-width:0}
+.invite-result input {font-family:monospace;font-size:13px}
+.auth-form input,.course-access input {border:1px solid #cddde5;padding:9px 10px;border-radius:4px;color:#19364a;background:#fff;min-width:0}
+@media(min-width:851px){.sidebar>.brand,.sidebar>.course-select,.sidebar>.nav-label,.sidebar>.sidebar-bottom{flex-shrink:0}.sidebar nav{flex:1;min-height:0;overflow-y:auto}.sidebar-bottom{padding-top:24px}}

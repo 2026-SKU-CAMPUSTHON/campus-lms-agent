@@ -1,3 +1,4 @@
+import {workerEnvironment} from '../worker-env.js';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {resolve} from 'node:path';
@@ -11,8 +12,7 @@ export type YouTubeImporter=(input:YouTubeOrigin)=>Promise<z.infer<typeof youtub
 const safeError=z.object({code:z.enum(['YOUTUBE_NOT_CONFIGURED','YOUTUBE_UNAVAILABLE','YOUTUBE_FETCH_FAILED','YOUTUBE_TOO_LARGE','YOUTUBE_RANGE_INVALID','YOUTUBE_ACCESS_BLOCKED','MEDIA_TOO_LONG','NO_SPEECH','INVALID_TRANSCRIPT','TRANSCRIPTION_FAILED','MEDIA_NOT_CONFIGURED','TRANSCRIPTION_MODEL_FAILED','AUDIO_DECODE_FAILED','INVALID_MEDIA','TRANSCRIPT_TOO_LARGE']),error:z.string().max(250)});
 export function createYouTubeImporter(root:string,dataDir:string):YouTubeImporter {
  return async input=> {
-  const env={...process.env,HF_HUB_DISABLE_TELEMETRY:'1',HF_HUB_DISABLE_PROGRESS_BARS:'1',HF_HUB_DISABLE_XET:'1'};
-  for(const key of ['ANTHROPIC_API_KEY','OPENAI_API_KEY','TYPESAFE_API_KEY','CODEX_API_KEY','GEMINI_API_KEY','SUPABASE_SERVICE_ROLE_KEY'])delete env[key as keyof typeof env];
+  const env={...workerEnvironment(),HF_HUB_DISABLE_TELEMETRY:'1',HF_HUB_DISABLE_PROGRESS_BARS:'1',HF_HUB_DISABLE_XET:'1'};
   try {
    const args=[resolve(root,'worker/import_youtube.py'),'--video-id',input.video_id,'--start',String(input.start_sec),'--model',process.env.WHISPER_MODEL||'small','--language',process.env.WHISPER_LANGUAGE||'auto','--cache-dir',process.env.WHISPER_CACHE_DIR?resolve(root,process.env.WHISPER_CACHE_DIR):resolve(dataDir,'models'),'--ffmpeg',process.env.FFMPEG_BIN||'ffmpeg','--ffprobe',process.env.FFPROBE_BIN||'ffprobe'];
    if(input.end_sec!==null)args.push('--end',String(input.end_sec));

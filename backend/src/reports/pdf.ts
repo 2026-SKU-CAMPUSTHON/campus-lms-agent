@@ -1,3 +1,4 @@
+import {workerEnvironment} from '../worker-env.js';
 import {spawn} from 'node:child_process';
 import {resolve} from 'node:path';
 import {HttpError} from '../errors.js';
@@ -9,7 +10,7 @@ export function renderReportPDF(snapshot:ReportSnapshot|StudentReportSnapshot,ro
  const input=JSON.stringify(snapshot);
  if(Buffer.byteLength(input)>16*1024*1024)throw new HttpError(422,'REPORT_TOO_LARGE','레포트가 너무 큽니다. 주차를 나누어 다운로드해 주세요.');
  return new Promise((resolvePDF,reject)=> {
-  const env=Object.fromEntries(Object.entries(process.env).filter(([key])=>!/(KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL)/i.test(key)));
+  const env=workerEnvironment();
   const start=()=>spawn(process.env.PYTHON_BIN||'python3',[resolve(root,'worker/report_pdf.py')],{env,stdio:['pipe','pipe','ignore']});
   let child:ReturnType<typeof start>;
   try{child=start()}catch{reject(new HttpError(503,'REPORT_PDF_UNAVAILABLE','PDF 생성 환경을 확인해 주세요. Python과 worker/requirements.txt 설치가 필요합니다.',true));return}

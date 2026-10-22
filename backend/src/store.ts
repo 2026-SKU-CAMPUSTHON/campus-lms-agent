@@ -13,7 +13,7 @@ export const IDS = {
 };
 export class Store {
   readonly db: DatabaseSync;
-  constructor(path: string) {
+  constructor(path: string, seedDemo=true) {
     if(path !== ':memory:') mkdirSync(dirname(path), {recursive:true});
     this.db = new DatabaseSync(path);
     this.db.exec(`PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL;
@@ -31,6 +31,11 @@ export class Store {
       CREATE INDEX IF NOT EXISTS threads_by_course_week_student ON threads(course_id,week_id,student_id);
       CREATE TABLE IF NOT EXISTS idempotency (user_id TEXT, route TEXT, key TEXT, fingerprint TEXT, status INTEGER, response TEXT, PRIMARY KEY(user_id,route,key));
     `);
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS auth_credentials (user_id TEXT PRIMARY KEY REFERENCES users(id), email TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS course_invites (token_hash TEXT PRIMARY KEY, course_id TEXT NOT NULL REFERENCES courses(id), role TEXT NOT NULL CHECK(role IN ('professor','student')), expires_at INTEGER NOT NULL, used_by TEXT REFERENCES users(id));
+    `);
+    if(!seedDemo)return;
     for(const [id,name] of [[IDS.professor,'교수 체험'],[IDS.student,'학생 가'],[IDS.student2,'학생 나'],[IDS.outsider,'다른 강의 학생']]) this.run('INSERT OR IGNORE INTO users VALUES (?,?)',id,name);
     this.run('INSERT OR IGNORE INTO courses VALUES (?,?)',IDS.course,'데이터베이스');
     this.run('INSERT OR IGNORE INTO courses VALUES (?,?)',IDS.otherCourse,'운영체제');

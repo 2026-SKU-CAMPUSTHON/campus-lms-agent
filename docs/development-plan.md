@@ -72,3 +72,8 @@
 ## 학생 개인 오답 PDF 후속
 
 사용자 요청으로 feat/ab-6-student-wrong-pdf에서 학생 주차별 개인 오답 조회·PDF를 구현한다(PR #15 기반). A/B와 공용 API/샘플·Python 렌더링에 영향을 주며 이슈 #6에 공유했다. API 0.10.0-student-report.1 / Worker 큐 draft-1 유지. 학생 ID를 클라이언트에서 받지 않고 저장된 본인 제출만 사용한다. 다음 담당은 선행 PR부터 검토하고 Supabase/배포/리허설을 이어간다.
+
+
+## 2026-10-22 MySQL·Oracle 전환
+
+사용자 결정으로 Supabase 대신 MySQL 8.4와 서버 세션 인증을 구현하고 Oracle Cloud 인스턴스에 배포한다. Codex가 A 플랫폼 및 B/C/D의 비동기 DB 통합을 담당한다. 브랜치는 feat/a-1-mysql-auth-deploy, 기반은 PR #16이다. 로그인·초대 권한·기존 학습 기능의 MySQL 검증, SSH 배포·HTTPS·백업 구성을 먼저 준비하고 인스턴스 접속 후 실제 배포/재시작을 확인한다. 기존 Supabase 일정·JWT/RLS 설명은 이전 계획이다. 운영 절차는 docs/deployment.md를 따른다.

@@ -1,0 +1,19 @@
+import {test,expect} from './fixtures';
+import {execFileSync} from 'node:child_process';
+import {resolve} from 'node:path';
+test.beforeAll(()=>execFileSync('python3',[resolve('scripts/create-sample-pdf.py')]));
+test('실제 MySQL 계정으로 교수 초대·학생 가입·퀴즈·오답 PDF·재로그인을 연결한다',async({page})=> {
+ const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.type()==='error'&&!message.text().includes('Failed to load resource'))errors.push(message.text())});
+ await page.goto('/');await expect(page.getByRole('heading',{name:'학습실 로그인'})).toBeVisible();await expect(page.getByText('로컬 개발 체험')).toHaveCount(0);
+ await page.getByLabel('이메일',{exact:true}).fill('teacher@example.test');await page.getByLabel('비밀번호',{exact:true}).fill('wrong-password');await page.getByRole('button',{name:'로그인',exact:true}).click();await expect(page.getByRole('alert')).toContainText('이메일 또는 비밀번호');
+ await page.getByLabel('비밀번호',{exact:true}).fill('Browser-test-password-2026');await page.getByRole('button',{name:'로그인',exact:true}).click();await expect(page.getByText('교수 학습실',{exact:true})).toBeVisible();
+ await page.getByText('강의 참여·팀원 초대',{exact:true}).click();await page.getByRole('button',{name:'초대 코드 만들기'}).click();const code=await page.getByLabel('발급한 초대 코드',{exact:true}).inputValue();expect(code).toHaveLength(43);
+ await page.getByLabel('강의 자료 파일').setInputFiles(resolve('tests/fixtures/generated/sample.pdf'));await page.getByLabel('시작 페이지').fill('2');await page.getByLabel('끝 페이지').fill('3');await page.getByRole('button',{name:'자료 등록하기'}).click();await expect(page.getByText('자료 처리가 끝났어요. 문제를 생성할 수 있어요.')).toBeVisible();
+ await page.getByLabel('문항 수',{exact:true}).fill('5');await page.getByRole('button',{name:'개념 문제 생성하기'}).click();await expect(page.getByRole('button',{name:'5문제 게시하기'})).toBeEnabled();await page.getByRole('button',{name:'5문제 게시하기'}).click();await expect(page.getByRole('button',{name:'게시 완료',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'로그아웃',exact:true}).click();await expect(page.getByRole('heading',{name:'학습실 로그인'})).toBeVisible();await page.getByRole('button',{name:'초대 코드로 가입하기'}).click();
+ await page.getByLabel('이름',{exact:true}).fill('팀원 학생');await page.getByLabel('이메일',{exact:true}).fill('student@example.test');await page.getByLabel('비밀번호',{exact:true}).fill('Browser-student-password-2026');await page.getByLabel('초대 코드',{exact:true}).fill(code);await page.getByRole('button',{name:'가입하고 참여하기'}).click();await expect(page.getByText('학생 학습실',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'퀴즈 풀기'}).click();await expect(page.getByText('개념 확인 퀴즈',{exact:true})).toBeVisible();await expect(page.locator('fieldset.solve-card')).toHaveCount(5);for(const group of await page.locator('fieldset.solve-card').all())await group.getByRole('radio').nth(1).check();await page.getByRole('button',{name:'답안 제출하고 결과 보기'}).click();await expect(page.getByRole('heading',{name:'나의 오답과 풀이'})).toBeVisible();await expect(page.getByText('정규화는 데이터 중복을 줄입니다.',{exact:true})).toHaveCount(5);
+ await page.getByRole('button',{name:'오답 레포트',exact:true}).click();const download=page.waitForEvent('download');await page.getByRole('button',{name:'오답 PDF 다운로드'}).click();expect((await download).suggestedFilename()).toMatch(/\.pdf$/);
+ await page.getByRole('button',{name:'로그아웃',exact:true}).click();await expect(page.getByRole('heading',{name:'학습실 로그인'})).toBeVisible();await page.getByLabel('이메일',{exact:true}).fill('student@example.test');await page.getByLabel('비밀번호',{exact:true}).fill('Browser-student-password-2026');await page.getByRole('button',{name:'로그인',exact:true}).click();await page.getByRole('button',{name:'내 오답 확인'}).click();await expect(page.getByText('정규화는 데이터 중복을 줄입니다.',{exact:true})).toHaveCount(5);
+ await page.setViewportSize({width:390,height:844});await expect(page.locator('body')).toHaveJSProperty('scrollWidth',390);expect(errors).toEqual([]);
+});

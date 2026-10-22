@@ -6,6 +6,7 @@ import {HttpError} from '../errors.js';
 export interface CodexOptions {binary?:string;model?:string}
 function cliEnvironment() {
   const env={...process.env};
+  for(const key of Object.keys(env))if(/(_URL$|_DSN$|BOOTSTRAP_)/i.test(key))delete env[key];
   // ChatGPT 로컬 로그인을 사용한다. 앱의 API 키를 CLI 자식 프로세스에 넘기지 않는다.
   for(const key of ['ANTHROPIC_API_KEY','OPENAI_API_KEY','CODEX_API_KEY','GEMINI_API_KEY','TYPESAFE_API_KEY','SUPABASE_SERVICE_ROLE_KEY'])delete env[key];
   return env;

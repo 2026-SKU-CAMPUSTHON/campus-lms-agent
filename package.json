@@ -17,7 +17,8 @@
     "test": "npm run test -w backend && python3 -m unittest discover -s worker -p 'test_*.py'",
     "test:e2e": "playwright test",
     "start": "npm run start -w backend",
-    "sample:pdf": "python3 scripts/create-sample-pdf.py"
+    "sample:pdf": "python3 scripts/create-sample-pdf.py",
+    "test:e2e:mysql": "playwright test --config playwright.mysql.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
