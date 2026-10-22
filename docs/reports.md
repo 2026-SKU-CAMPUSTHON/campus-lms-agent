@@ -1,6 +1,6 @@
 # 교수 주차별 레포트
 
-현재 API `0.9.0-report-pdf.1` (화면 레포트 최초 계약은 `0.4.0-reports.1`). 같은 강의의 교수만 조회한다. 학생은 탭을 볼 수 없고 API도 403으로 차단한다. 통계는 저장된 자료를 SQL과 코드로 계산하며 Claude·Jev를 다시 호출하지 않는다.
+현재 API `0.10.0-student-report.1` (화면 레포트 최초 계약은 `0.4.0-reports.1`). 같은 강의의 교수만 조회한다. 학생은 탭을 볼 수 없고 API도 403으로 차단한다. 통계는 저장된 자료를 SQL과 코드로 계산하며 Claude·Jev를 다시 호출하지 않는다.
 
 ## 화면과 조회
 
@@ -50,3 +50,23 @@ PDF는 강의명·선택 주차·생성 시각(KST), 전체 요약, 주차별 �
 명시적 한도는 요청당 게시 문항 2,000개·Q&A 1,000개·입력 JSON 16MiB·결과 PDF 32MiB·생성 30초이며 앱당 동시 생성은 2개다. 초과 시 잘라내지 않고 422 REPORT_TOO_LARGE 또는 503 REPORT_TIMEOUT, 동시 요청 초과는 429 REPORT_BUSY로 주차 분할/재시도를 안내한다. Python/의존성/글꼴 문제는 503 REPORT_PDF_UNAVAILABLE이며 오류 JSON을 정상 PDF로 저장하지 않는다. 큰 학기 전체 자료의 백그라운드 내보내기는 후속 작업이다.
 
 공식 구현 참고: [ReportLab 한글/TrueType 글꼴](https://docs.reportlab.com/reportlab/userguide/ch3_fonts/), [문단/CJK 줄바꿈](https://docs.reportlab.com/reportlab/userguide/ch6_paragraphs/), [페이지 레이아웃](https://docs.reportlab.com/reportlab/userguide/ch5_platypus/).
+
+
+## 학생 개인 오답 레포트
+
+학생 계정의 **오답 레포트** 탭에서 복습할 강의 주차를 하나/여러 개/전체 선택하고 **오답 PDF 다운로드**를 누른다. 강의에 등록한 주차 기준이며 달력의 주 번호가 아니다. 화면은 본인의 제출 퀴즈 수·풀이 문항 수·오답 수·정답률과 주차별 기록을 보여준다. 다운로드 중에는 중복 클릭/주차 선택을 막고 오류 안내 후 다시 받을 수 있다. 선택이 없으면 조회/다운로드하지 않는다.
+
+- `GET /api/courses/{course_id}/reports/wrong-answers?week_ids=uuid,uuid`: 본인의 JSON 요약과 주차별 제출/오답.
+- `GET /api/courses/{course_id}/reports/wrong-answers/pdf?week_ids=uuid,uuid`: 같은 본인 제출 범위의 PDF attachment.
+
+week_ids 생략은 강의 전체 주차다. 세션 사용자와 해당 강의의 student membership을 서버가 확인한다. 교수·비수강생은 403, 비로그인은 401이다. 다른 강의의 주차는 404, 잘못된/빈 필터 및 user_id/attempt_id/quiz_id 등 임의 필드는 422다. 클라이언트가 학생 ID를 지정하지 않는다. JSON과 PDF 모두 동일한 서버 범위를 사용하며 화면 숨김으로 권한을 대체하지 않는다.
+
+저장된 attempts를 현재 사용자·강의·선택 주차로 SQL에서 제한한다. 본인의 제출 횟수/총 풀이/정답/오답과 전체 정답률(정답 수/풀이 수)을 계산하며 분모 0은 null이다. 제출하지 않은 퀴즈는 정답률/오답의 분모에 포함하지 않는다. 선택된 주차별로 본인의 제출 기록을 모두 모으고, 같은 강의의 다른 학생/다른 강의/미제출·맞힌 문항의 문제·정답/교수 집계·Q&A는 응답과 PDF에 넣지 않는다.
+
+오답은 제출 당시 저장된 wrong_questions를 사용한다. 문제·보기·내 선택·정답·풀이·페이지/영상 시간 출처를 그대로 보존하고 게시 퀴즈의 문항 번호와 주차별 퀴즈 번호를 붙인다. 현재 자료로 정답이나 풀이를 재생성하지 않는다. PDF는 원본 미디어 URL/재생 링크를 제공하지 않고 비공개 시간 출처에는 원본 비공개를 표시한다. 기존 실제 원본 접근 권한은 계속 서버에서 검사한다.
+
+한 건도 제출하지 않았으면 ‘아직 제출한 퀴즈가 없습니다’로 표시하고 정답/오답 문항을 넣지 않는다. 제출했으나 오답이 0개면 ‘모두 맞혔습니다. 오답이 없습니다’로 구분한다. 미응시를 모두 정답으로 처리하지 않는다. PDF는 학생 이름·강의명·선택 주차·생성 시각(KST), 요약/주차별 표, 본인의 오답과 선택 답/정답 표시·풀이/출처를 담는다.
+
+제출 1,000건 또는 오답 2,000개를 넘으면 422 REPORT_TOO_LARGE로 주차 분할을 요청한다. 같은 PDF 렌더러의 JSON 16MiB·PDF 32MiB·30초 및 교수/학생이 공유하는 동시 2개 한도를 사용한다. 넘친 내용을 조용히 생략하지 않는다. no-store·ASCII/UTF-8 attachment 파일명·키 제거 stdin/stdout·한글/수학 글꼴·환경 오류 처리도 교수 PDF와 같다. API/DB 저장 스키마나 Worker 큐는 바꾸지 않으며 Claude/Jev 호출은 없다.
+
+[합성 계약 샘플](contracts/examples/student-wrong-report.json)과 실제 검증 범위는 [검증 기록](verification.md)을 따른다. 샘플은 실제 학생이나 강의 내용이 아니다.

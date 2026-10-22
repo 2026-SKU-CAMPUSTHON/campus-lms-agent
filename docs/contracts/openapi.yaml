@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Campus LMS Agent API",
-    "version": "0.9.0-report-pdf.1",
-    "description": "로컬 퀴즈 및 Q&A 구현 계약. x-implementation-status=implemented는 제공하는 API, planned는 후속 작업이다. Q&A는 주차 자료 검색 후 Jev 판단, Claude API 또는 명시적으로 선택한 Codex 문장 생성, 추가 질문 1회와 교수 승격을 수행한다. 실제 Jev 키 없는 경우 오류·재시도로 남기며 다른 모델 판단으로 자동 대체하지 않는다. Supabase 배포는 미구현이다. 교수 레포트는 현재 수강생 기준 퀴즈 집계와 선택 주차 전체 Q&A 상태·대화 페이지를 제공한다. 녹음·동영상은 로컬 faster-whisper로 전사하고 같은 주차 Q&A에 시간 출처로 사용한다. YouTube 공개 영상은 자막 우선·음성 전사 대체로 선택 시간 구간을 같은 주차 Q&A에 사용한다. 원본 시각을 보존하고 앱에서의 원본/전사 공개 여부를 검사한다. 완료된 YouTube의 등록 시간 구간으로 퀴즈를 생성하고, 서버가 근거 ID를 원본 시간 출처로 연결한다. 교수 선택 게시·학생 제출/오답과 문항별 레포트에 같은 출처를 보존한다. 교수는 미게시 초안의 문제/보기/정답/풀이를 직접 수정하고 버전을 확인하여 저장·게시할 수 있다. 게시 후 수정은 거부한다. 교수의 선택 주차 전체 퀴즈/Q&A PDF 다운로드를 제공한다. 기존 집계/권한과 Worker 계약은 유지한다."
+    "version": "0.10.0-student-report.1",
+    "description": "로컬 퀴즈 및 Q&A 구현 계약. x-implementation-status=implemented는 제공하는 API, planned는 후속 작업이다. Q&A는 주차 자료 검색 후 Jev 판단, Claude API 또는 명시적으로 선택한 Codex 문장 생성, 추가 질문 1회와 교수 승격을 수행한다. 실제 Jev 키 없는 경우 오류·재시도로 남기며 다른 모델 판단으로 자동 대체하지 않는다. Supabase 배포는 미구현이다. 교수 레포트는 현재 수강생 기준 퀴즈 집계와 선택 주차 전체 Q&A 상태·대화 페이지를 제공한다. 녹음·동영상은 로컬 faster-whisper로 전사하고 같은 주차 Q&A에 시간 출처로 사용한다. YouTube 공개 영상은 자막 우선·음성 전사 대체로 선택 시간 구간을 같은 주차 Q&A에 사용한다. 원본 시각을 보존하고 앱에서의 원본/전사 공개 여부를 검사한다. 완료된 YouTube의 등록 시간 구간으로 퀴즈를 생성하고, 서버가 근거 ID를 원본 시간 출처로 연결한다. 교수 선택 게시·학생 제출/오답과 문항별 레포트에 같은 출처를 보존한다. 교수는 미게시 초안의 문제/보기/정답/풀이를 직접 수정하고 버전을 확인하여 저장·게시할 수 있다. 게시 후 수정은 거부한다. 교수의 선택 주차 전체 퀴즈/Q&A PDF 다운로드를 제공한다. 기존 집계/권한과 Worker 계약은 유지한다. 학생 본인의 제출 결과만 사용하는 주차별 오답 레포트 조회/PDF 다운로드를 제공한다."
   },
   "servers": [
     {
@@ -2093,6 +2093,240 @@
           }
         }
       }
+    },
+    "/courses/{course_id}/reports/wrong-answers": {
+      "get": {
+        "operationId": "getMyWrongAnswersReport",
+        "description": "학생 전용. 세션의 본인과 강의 membership으로 저장된 제출 결과만 조회한다. week_ids 생략은 전체 주차이며 선택/전체 요약과 본인의 오답·선택 답·정답·풀이·페이지/시간 출처를 제공한다. 타인 UUID/attempt_id/quiz_id 입력은 받지 않는다. 미응시·모두 정답을 구분하며 미제출/맞힌 문항의 정답·다른 학생·Q&A·교수 통계는 제외한다. 원본 비공개는 유지하고 모델을 호출하지 않는다. 제출 1000건 또는 오답 2000개 초과는 422다. 정답률은 본인의 정답 수/풀이 수이며 분모 0은 null이다. 쿼리의 임의 필드는 422다.",
+        "responses": {
+          "200": {
+            "description": "본인의 선택 주차 오답 레포트",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentWrongReport"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "권한 오류·계약 오류·처리 오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "로그인 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "학생 권한/강의 소속 없음. 교수도 접근 불가.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "다른 강의/없는 주차",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "잘못된 선택 또는 레포트 크기 초과",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "week_ids",
+            "in": "query",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "minItems": 1,
+              "maxItems": 100
+            },
+            "description": "쉼표로 구분한 주차 UUID. 생략하면 전체 주차."
+          }
+        ],
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "localSession": []
+          }
+        ]
+      }
+    },
+    "/courses/{course_id}/reports/wrong-answers/pdf": {
+      "get": {
+        "operationId": "downloadMyWrongAnswersPDF",
+        "tags": [
+          "Reports"
+        ],
+        "description": "학생 전용. 세션의 본인과 강의 membership으로 저장된 제출 결과만 조회한다. week_ids 생략은 전체 주차이며 선택/전체 요약과 본인의 오답·선택 답·정답·풀이·페이지/시간 출처를 제공한다. 타인 UUID/attempt_id/quiz_id 입력은 받지 않는다. 미응시·모두 정답을 구분하며 미제출/맞힌 문항의 정답·다른 학생·Q&A·교수 통계는 제외한다. 원본 비공개는 유지하고 모델을 호출하지 않는다. 제출 1000건 또는 오답 2000개 초과는 422다. PDF는 기존 한글/수학 글꼴·16MiB 입력·32MiB 출력·30초·공유 동시 2개 제한을 재사용한다. no-store attachment.",
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "localSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "week_ids",
+            "in": "query",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "minItems": 1,
+              "maxItems": 100
+            },
+            "description": "쉼표로 구분한 주차 UUID. 생략하면 전체 주차."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "선택 주차 수업 레포트 PDF. 한글/ASCII 다운로드 파일명.",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "attachment; filename 및 UTF-8 filename*"
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "로그인 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "학생 권한/강의 소속 없음. 교수도 접근 불가.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "다른 강의/없는 주차",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "잘못된 선택 또는 레포트 크기 초과",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "동시 PDF 생성 중",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "PDF 환경 미설치 또는 생성 실패/시간 초과",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3828,6 +4062,218 @@
         ],
         "additionalProperties": false,
         "description": "교수의 미게시 초안 문항 전체 수정. 문자열 앞뒤 공백을 제거한다. 기존 보기 ID 네 개를 중복 없이 모두 보내고 그중 하나를 정답으로 선택한다. 보기 정규화 문자열 중복을 거부한다. 질문/보기 ID·순서·출처는 유지한다."
+      },
+      "StudentWrongMetrics": {
+        "type": "object",
+        "properties": {
+          "submission_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wrong_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct_rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "nullable": true
+          }
+        },
+        "required": [
+          "submission_count",
+          "total_count",
+          "correct_count",
+          "wrong_count",
+          "correct_rate"
+        ],
+        "additionalProperties": false
+      },
+      "StudentWrongQuestion": {
+        "type": "object",
+        "properties": {
+          "question_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            }
+          },
+          "correct_option_id": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            }
+          },
+          "selected_option_id": {
+            "type": "string"
+          },
+          "question_no": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "question_id",
+          "prompt",
+          "options",
+          "correct_option_id",
+          "explanation",
+          "sources",
+          "selected_option_id",
+          "question_no"
+        ],
+        "additionalProperties": false
+      },
+      "StudentWrongAttempt": {
+        "type": "object",
+        "properties": {
+          "attempt_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quiz_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quiz_no": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "total_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "correct_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wrong_questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentWrongQuestion"
+            }
+          }
+        },
+        "required": [
+          "attempt_id",
+          "quiz_id",
+          "quiz_no",
+          "total_count",
+          "correct_count",
+          "wrong_questions"
+        ],
+        "additionalProperties": false
+      },
+      "StudentWrongWeek": {
+        "type": "object",
+        "properties": {
+          "week_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "week_no": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "submission_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wrong_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct_rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "nullable": true
+          },
+          "attempts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentWrongAttempt"
+            }
+          }
+        },
+        "required": [
+          "week_id",
+          "week_no",
+          "title",
+          "submission_count",
+          "total_count",
+          "correct_count",
+          "wrong_count",
+          "correct_rate",
+          "attempts"
+        ],
+        "additionalProperties": false
+      },
+      "StudentWrongReport": {
+        "type": "object",
+        "properties": {
+          "course_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "student_name": {
+            "type": "string"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/StudentWrongMetrics"
+          },
+          "weeks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentWrongWeek"
+            }
+          }
+        },
+        "required": [
+          "course_id",
+          "generated_at",
+          "student_name",
+          "summary",
+          "weeks"
+        ],
+        "additionalProperties": false
       }
     }
   }

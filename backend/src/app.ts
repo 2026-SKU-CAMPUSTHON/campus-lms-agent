@@ -81,7 +81,7 @@ export function createApp(options:AppOptions) {
     next();
   });
   app.use(express.json({limit:'128kb'}));
-  app.get('/api/health',(_req,res)=>res.json({status:'ok',mode:'local-development',ai_configured:ready,provider,model,contract_version:'0.9.0-report-pdf.1',qa_configured:qaReady,jev_configured:Boolean(options.jevApiKey || options.qaJudge),jev_model:options.jevModel || 'jev-1.13.0'}));
+  app.get('/api/health',(_req,res)=>res.json({status:'ok',mode:'local-development',ai_configured:ready,provider,model,contract_version:'0.10.0-student-report.1',qa_configured:qaReady,jev_configured:Boolean(options.jevApiKey || options.qaJudge),jev_model:options.jevModel || 'jev-1.13.0'}));
   app.get('/api/dev/accounts',(_req,res)=>res.json(store.all<{user_id:string;name:string}>('SELECT id AS user_id,name FROM users WHERE id != ?',IDS.outsider)));
   app.post('/api/dev/login',(req,res)=> {
     const id=z.object({user_id:uuid}).strict().parse(req.body).user_id;
@@ -263,7 +263,7 @@ export function createApp(options:AppOptions) {
   });
   app.get('/api/me/attempts',(req,res)=>res.json(store.all<Row>('SELECT * FROM attempts WHERE user_id=? ORDER BY rowid DESC',current(req).user_id).map(r=>parse<AttemptResult>(r))));
   mountQA(app,qa,{current,membership,weekFor,idempotent});
-  mountReports(app,store,{root:options.root,membership,viewThread:thread=>qa.public(thread)});
+  mountReports(app,store,{root:options.root,current,membership,viewThread:thread=>qa.public(thread)});
   const media=mountMedia(app,store,options.root,options.dataDir,{membership,weekFor},options.transcriber,options.youtubeImporter);
   app.use('/api',(_req,_res,next)=>next(new HttpError(404,'NOT_FOUND','API 경로를 찾을 수 없습니다.')));
   if(options.frontendDir && existsSync(resolve(options.frontendDir,'index.html'))) app.use(express.static(options.frontendDir));

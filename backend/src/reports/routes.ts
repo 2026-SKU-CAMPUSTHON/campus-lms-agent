@@ -2,11 +2,12 @@ import type {Express,Request} from 'express';
 import {z} from 'zod';
 import {HttpError} from '../errors.js';
 import type {Store} from '../store.js';
-import type {Role,Week} from '../types.js';
+import type {Role,Week,User} from '../types.js';
 import type {QAThread,StoredThread} from '../qa/types.js';
 import {Reports} from './service.js';
-import {renderReportPDF,type ReportSnapshot} from './pdf.js';
-interface Context {root:string;membership:(req:Request,course:string,role?:Role)=>Role;viewThread:(thread:StoredThread)=>QAThread}
+import {renderReportPDF,type ReportSnapshot,type StudentReportSnapshot} from './pdf.js';
+import {studentWrongReport} from './student.js';
+interface Context {root:string;current:(req:Request)=>User;membership:(req:Request,course:string,role?:Role)=>Role;viewThread:(thread:StoredThread)=>QAThread}
 const selection=z.string().trim().min(1).transform(value=>value.split(',').map(s=>s.trim())).pipe(z.array(z.string().uuid()).min(1).max(100));
 const query=z.object({week_ids:selection.optional()}).strict();
 const qaQuery=z.object({week_ids:selection.optional(),page:z.coerce.number().int().min(1).max(100000).default(1),page_size:z.coerce.number().int().min(1).max(100).default(25)}).strict();
@@ -26,6 +27,24 @@ export function mountReports(app:Express,store:Store,context:Context) {
  app.get('/api/courses/:course_id/reports/qa',(req,res)=> {
   const course=z.string().uuid().parse(req.params.course_id);context.membership(req,course,'professor');
   const body=qaQuery.parse(req.query);res.json(service.qa(course,selectedWeeks(course,body.week_ids),body.page,body.page_size));
+ });
+ app.get('/api/courses/:course_id/reports/wrong-answers',(req,res)=> {
+  const course=z.string().uuid().parse(req.params.course_id);context.membership(req,course,'student');
+  const body=query.parse(req.query);res.json(store.transaction(()=>studentWrongReport(store,course,selectedWeeks(course,body.week_ids),context.current(req))));
+ });
+ app.get('/api/courses/:course_id/reports/wrong-answers/pdf',async(req,res)=> {
+  const course=z.string().uuid().parse(req.params.course_id);context.membership(req,course,'student');
+  const body=query.parse(req.query),weeks=selectedWeeks(course,body.week_ids);
+  if(exporting>=2)throw new HttpError(429,'REPORT_BUSY','다른 PDF를 생성하고 있습니다. 잠시 뒤 다시 시도해 주세요.',true);
+  const snapshot=store.transaction<StudentReportSnapshot>(()=> {
+   const report=studentWrongReport(store,course,weeks,context.current(req));
+   return {report_type:'student_wrong_answers',course_title:store.get<{title:string}>('SELECT title FROM courses WHERE id=?',course)!.title,generated_at:report.generated_at,report};
+  });
+  exporting++;
+  try {
+   const pdf=await renderReportPDF(snapshot,context.root),date=new Date(Date.parse(snapshot.generated_at)+9*3600000).toISOString().slice(0,10);
+   res.type('application/pdf').setHeader('Content-Disposition',`attachment; filename="campus-wrong-answers-${date}.pdf"; filename*=UTF-8''${encodeURIComponent('나의-오답-레포트-'+date+'.pdf')}`);res.send(pdf);
+  }finally{exporting--}
  });
  app.get('/api/courses/:course_id/reports/pdf',async(req,res)=> {
   const course=z.string().uuid().parse(req.params.course_id);context.membership(req,course,'professor');

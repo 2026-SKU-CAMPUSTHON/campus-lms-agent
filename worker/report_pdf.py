@@ -14,7 +14,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, LongTable, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, KeepTogether, LongTable, TableStyle
 
 FONT_DIR = Path(__file__).resolve().parent / 'fonts'
 NAVY = colors.HexColor('#17384B')
@@ -108,65 +108,117 @@ def render_report(snapshot):
                 text = '출처 | %s · %sp' % (name, source['slide_no'])
             else:
                 text = '출처 | %s · %s - %s%s' % (name, clock(source['start_sec']), clock(math.ceil(source['end_sec'])), ' · YouTube' if source.get('origin') == 'youtube' else '')
+            if snapshot.get('report_type') == 'student_wrong_answers' and source['source_type'] == 'transcript' and not source.get('original_visible_to_students', False):
+                text += ' · 원본 비공개'
             add(text, small)
 
-    quiz, qa = snapshot['quiz'], snapshot['qa']
-    total = quiz['summary']
-    width = A4[0] - 80
-    add('CAMPUS LEARNING ROOM', caption)
-    add('주차별 수업 레포트', title)
-    add(snapshot['course_title'], heading)
-    add('선택 주차 | ' + (', '.join('%s주차' % w['week_no'] for w in quiz['weeks']) or '등록된 주차 없음'))
-    add('생성 시각 | ' + timestamp(snapshot['generated_at']), small)
-    add('01  전체 요약', heading)
-    table([['퀴즈 참여율', '퀴즈 정답률', 'Q&A'], [rate(total['participation_rate']), rate(total['correct_rate']), '%s건' % qa['summary']['thread_count']], ['%s명 / 현재 수강생 %s명' % (total['participant_count'], total['eligible_student_count']), '%s개 정답 / 답안 %s개' % (total['correct_count'], total['answer_count']), '답변 완료 %s건 · 교수 대기 %s건' % (qa['summary']['resolved_count'], qa['summary']['awaiting_professor_count'])]], [width / 3] * 3)
-    add('게시 퀴즈 %s개 · 게시 문항 %s개 · 제출 %s건' % (total['quiz_count'], total['question_count'], total['submission_count']), small)
-    add('02  주차별 학습 현황', heading)
-    rows = [['주차', '퀴즈 / 문항', '참여 학생', '참여율', '정답률', 'Q&A']]
-    for week in quiz['weeks']:
-        questions = next((w['thread_count'] for w in qa['weeks'] if w['week_id'] == week['week_id']), 0)
-        rows.append(['%s주차\n%s' % (week['week_no'], week['title']), '%s개 / %s문항' % (week['quiz_count'], week['question_count']), '%s / %s명' % (week['participant_count'], week['eligible_student_count']), rate(week['participation_rate']), '%s\n%s / %s개' % (rate(week['correct_rate']), week['correct_count'], week['answer_count']), '%s건' % questions])
-    table(rows, [width * n for n in [.22, .16, .15, .14, .20, .13]])
-    add('집계 기준', label)
-    for line in ['참여율: 현재 수강생 중 선택 주차의 게시 퀴즈를 한 번 이상 제출한 고유 학생 수 / 현재 수강생 수.', '정답률: 실제 제출 답안의 정답 수 / 제출 답안 수. 전체는 분자·분모 합산이며 주차별 비율의 단순 평균이 아닙니다.', '미제출은 오답으로 세지 않습니다. 게시 퀴즈가 없거나 분모가 0이면 집계 없음으로 표시합니다. 퀴즈당 제출은 1회입니다.', '현재 수강생 기준이므로 수강생 구성이 바뀌면 과거 주차 집계도 달라질 수 있습니다. Q&A는 조회 시점의 상태와 선택 주차의 전체 대화입니다.']:
-        add(line, small)
-    story.append(PageBreak())
-    add('03  문항별 퀴즈 결과', heading)
-    if not quiz['weeks']:
-        add('등록된 주차가 없습니다.')
-    for week in quiz['weeks']:
-        add('%s주차 · %s' % (week['week_no'], week['title']), heading)
-        if not week['questions']:
-            add('아직 게시한 퀴즈가 없습니다.', small)
-        for question in week['questions']:
-            add('퀴즈 %s · %s번 | 정답률 %s (%s/%s)' % (question['quiz_no'], question['question_no'], rate(question['correct_rate']), question['correct_count'], question['answer_count']), label)
-            add(question['prompt'])
-            for option in question['options']:
-                correct = option['option_id'] == question['correct_option_id']
-                add('%s. %s%s' % (option['option_id'].upper(), option['text'], '  [정답]' if correct else ''), body)
-            add('풀이', caption)
-            add(question['explanation'])
-            sources(question['sources'])
-            story.append(Spacer(1, 7))
-    story.append(PageBreak())
-    add('04  Q&A 내역', heading)
-    add('질문 %s건 · 답변 완료 %s건 · 교수 대기 %s건 · 응답 오류 %s건 · 추가 질문 사용 %s건' % (qa['summary']['thread_count'], qa['summary']['resolved_count'], qa['summary']['awaiting_professor_count'], qa['summary']['error_count'], qa['summary']['clarified_thread_count']), small)
-    add('선택 주차의 전체 대화를 포함합니다. 화면의 Q&A 페이지 선택과 무관합니다.', small)
-    if not qa['threads']:
-        add('선택한 주차에 아직 질문이 없습니다.')
-    for index, thread in enumerate(qa['threads'], 1):
-        week = next(w for w in quiz['weeks'] if w['week_id'] == thread['week_id'])
-        add('Q&A %s | %s주차 · %s' % (index, week['week_no'], thread['student_name']), label)
-        add('%s · 추가 질문 %s/1회 · %s' % (STATES[thread['state']], thread['clarification_count'], timestamp(thread['created_at'])), small)
-        if thread.get('handoff_reason'):
-            add('교수 승격 사유 | ' + REASONS[thread['handoff_reason']], small)
-        if thread.get('error'):
-            add('응답 오류 | ' + thread['error']['message'], small)
-        for message in thread['messages']:
-            add(ROLES[message['author_role']] + (' · 추가 질문' if message['kind'] == 'clarification' else ''), caption)
-            add(message['text'])
-            sources(message['sources'])
-        story.append(Spacer(1, 9))
+    student_mode = snapshot.get('report_type') == 'student_wrong_answers'
+    if student_mode:
+        report = snapshot['report']
+        width = A4[0] - 80
+        add('CAMPUS LEARNING ROOM', caption)
+        add('나의 오답 레포트', title)
+        add(snapshot['course_title'], heading)
+        add('학생 | ' + report['student_name'])
+        add('선택 주차 | ' + (', '.join('%s주차' % w['week_no'] for w in report['weeks']) or '등록된 주차 없음'))
+        add('생성 시각 | ' + timestamp(snapshot['generated_at']), small)
+        add('01  나의 복습 결과', heading)
+        total = report['summary']
+        table([['제출한 퀴즈', '틀린 문제', '나의 정답률'], ['%s개' % total['submission_count'], '%s개' % total['wrong_count'], rate(total['correct_rate'])], ['본인이 제출한 퀴즈만 포함', '문제·정답·풀이 수록', '%s개 정답 / %s개 풀이' % (total['correct_count'], total['total_count'])]], [width / 3] * 3)
+        rows = [['주차', '제출 퀴즈', '풀이 문항', '정답 / 오답', '정답률']]
+        for week in report['weeks']:
+            rows.append(['%s주차\n%s' % (week['week_no'], week['title']), '%s개' % week['submission_count'], '%s개' % week['total_count'], '%s / %s개' % (week['correct_count'], week['wrong_count']), rate(week['correct_rate'])])
+        table(rows, [width * n for n in [.30, .17, .17, .19, .17]])
+        add('본인이 제출한 퀴즈의 저장된 결과만 사용합니다. 미응시 퀴즈의 정답과 다른 학생 기록은 포함하지 않습니다.', small)
+        if total['submission_count'] == 0:
+            add('선택한 주차에 아직 제출한 퀴즈가 없습니다.', label)
+            add('퀴즈를 풀고 제출하면 틀린 문제와 정답·풀이를 이 레포트에서 확인할 수 있습니다.', small)
+        elif total['wrong_count'] == 0:
+            add('제출한 퀴즈를 모두 맞혔습니다. 오답이 없습니다.', label)
+        if total['wrong_count']:
+            story.append(PageBreak())
+            add('02  주차별 오답과 풀이', heading)
+            for week in report['weeks']:
+                week_start = len(story)
+                add('%s주차 · %s' % (week['week_no'], week['title']), heading)
+                if not week['attempts']:
+                    add('이 주차에 아직 제출한 퀴즈가 없습니다.', small)
+                for attempt_index, attempt in enumerate(week['attempts']):
+                    attempt_start = week_start if attempt_index == 0 else len(story)
+                    add('퀴즈 %s | 정답 %s/%s · 오답 %s개' % (attempt['quiz_no'], attempt['correct_count'], attempt['total_count'], len(attempt['wrong_questions'])), label)
+                    if not attempt['wrong_questions']:
+                        add('모두 맞힌 퀴즈입니다. 오답이 없습니다.', small)
+                    for question_index, question in enumerate(attempt['wrong_questions']):
+                        block_start = attempt_start if question_index == 0 else len(story)
+                        add('%s번 문제' % question['question_no'], caption)
+                        add(question['prompt'])
+                        for option in question['options']:
+                            tag = '  [정답]' if option['option_id'] == question['correct_option_id'] else '  [내 선택]' if option['option_id'] == question['selected_option_id'] else ''
+                            add('%s. %s%s' % (option['option_id'].upper(), option['text'], tag))
+                        add('내 선택 %s · 정답 %s' % (question['selected_option_id'].upper(), question['correct_option_id'].upper()), caption)
+                        add('풀이', caption)
+                        add(question['explanation'])
+                        sources(question['sources'])
+                        story.append(Spacer(1, 7))
+                        story[block_start:] = [KeepTogether(story[block_start:])]
+    else:
+        quiz, qa = snapshot['quiz'], snapshot['qa']
+        total = quiz['summary']
+        width = A4[0] - 80
+        add('CAMPUS LEARNING ROOM', caption)
+        add('주차별 수업 레포트', title)
+        add(snapshot['course_title'], heading)
+        add('선택 주차 | ' + (', '.join('%s주차' % w['week_no'] for w in quiz['weeks']) or '등록된 주차 없음'))
+        add('생성 시각 | ' + timestamp(snapshot['generated_at']), small)
+        add('01  전체 요약', heading)
+        table([['퀴즈 참여율', '퀴즈 정답률', 'Q&A'], [rate(total['participation_rate']), rate(total['correct_rate']), '%s건' % qa['summary']['thread_count']], ['%s명 / 현재 수강생 %s명' % (total['participant_count'], total['eligible_student_count']), '%s개 정답 / 답안 %s개' % (total['correct_count'], total['answer_count']), '답변 완료 %s건 · 교수 대기 %s건' % (qa['summary']['resolved_count'], qa['summary']['awaiting_professor_count'])]], [width / 3] * 3)
+        add('게시 퀴즈 %s개 · 게시 문항 %s개 · 제출 %s건' % (total['quiz_count'], total['question_count'], total['submission_count']), small)
+        add('02  주차별 학습 현황', heading)
+        rows = [['주차', '퀴즈 / 문항', '참여 학생', '참여율', '정답률', 'Q&A']]
+        for week in quiz['weeks']:
+            questions = next((w['thread_count'] for w in qa['weeks'] if w['week_id'] == week['week_id']), 0)
+            rows.append(['%s주차\n%s' % (week['week_no'], week['title']), '%s개 / %s문항' % (week['quiz_count'], week['question_count']), '%s / %s명' % (week['participant_count'], week['eligible_student_count']), rate(week['participation_rate']), '%s\n%s / %s개' % (rate(week['correct_rate']), week['correct_count'], week['answer_count']), '%s건' % questions])
+        table(rows, [width * n for n in [.22, .16, .15, .14, .20, .13]])
+        add('집계 기준', label)
+        for line in ['참여율: 현재 수강생 중 선택 주차의 게시 퀴즈를 한 번 이상 제출한 고유 학생 수 / 현재 수강생 수.', '정답률: 실제 제출 답안의 정답 수 / 제출 답안 수. 전체는 분자·분모 합산이며 주차별 비율의 단순 평균이 아닙니다.', '미제출은 오답으로 세지 않습니다. 게시 퀴즈가 없거나 분모가 0이면 집계 없음으로 표시합니다. 퀴즈당 제출은 1회입니다.', '현재 수강생 기준이므로 수강생 구성이 바뀌면 과거 주차 집계도 달라질 수 있습니다. Q&A는 조회 시점의 상태와 선택 주차의 전체 대화입니다.']:
+            add(line, small)
+        story.append(PageBreak())
+        add('03  문항별 퀴즈 결과', heading)
+        if not quiz['weeks']:
+            add('등록된 주차가 없습니다.')
+        for week in quiz['weeks']:
+            add('%s주차 · %s' % (week['week_no'], week['title']), heading)
+            if not week['questions']:
+                add('아직 게시한 퀴즈가 없습니다.', small)
+            for question in week['questions']:
+                add('퀴즈 %s · %s번 | 정답률 %s (%s/%s)' % (question['quiz_no'], question['question_no'], rate(question['correct_rate']), question['correct_count'], question['answer_count']), label)
+                add(question['prompt'])
+                for option in question['options']:
+                    correct = option['option_id'] == question['correct_option_id']
+                    add('%s. %s%s' % (option['option_id'].upper(), option['text'], '  [정답]' if correct else ''), body)
+                add('풀이', caption)
+                add(question['explanation'])
+                sources(question['sources'])
+                story.append(Spacer(1, 7))
+        story.append(PageBreak())
+        add('04  Q&A 내역', heading)
+        add('질문 %s건 · 답변 완료 %s건 · 교수 대기 %s건 · 응답 오류 %s건 · 추가 질문 사용 %s건' % (qa['summary']['thread_count'], qa['summary']['resolved_count'], qa['summary']['awaiting_professor_count'], qa['summary']['error_count'], qa['summary']['clarified_thread_count']), small)
+        add('선택 주차의 전체 대화를 포함합니다. 화면의 Q&A 페이지 선택과 무관합니다.', small)
+        if not qa['threads']:
+            add('선택한 주차에 아직 질문이 없습니다.')
+        for index, thread in enumerate(qa['threads'], 1):
+            week = next(w for w in quiz['weeks'] if w['week_id'] == thread['week_id'])
+            add('Q&A %s | %s주차 · %s' % (index, week['week_no'], thread['student_name']), label)
+            add('%s · 추가 질문 %s/1회 · %s' % (STATES[thread['state']], thread['clarification_count'], timestamp(thread['created_at'])), small)
+            if thread.get('handoff_reason'):
+                add('교수 승격 사유 | ' + REASONS[thread['handoff_reason']], small)
+            if thread.get('error'):
+                add('응답 오류 | ' + thread['error']['message'], small)
+            for message in thread['messages']:
+                add(ROLES[message['author_role']] + (' · 추가 질문' if message['kind'] == 'clarification' else ''), caption)
+                add(message['text'])
+                sources(message['sources'])
+            story.append(Spacer(1, 9))
     if replacements:
         add('문자 표시 안내', label)
         add('포함 글꼴에 없는 문자는 [U+코드]로 표시했습니다. 원문을 삭제하거나 이미지로 대체하지 않았습니다.', small)
@@ -175,16 +227,16 @@ def render_report(snapshot):
         canvas.saveState()
         canvas.setFont('Campus', 8)
         canvas.setFillColor(MUTED)
-        canvas.drawString(40, A4[1] - 28, '캠퍼스 학습실 · 교수 수업 레포트')
+        canvas.drawString(40, A4[1] - 28, '캠퍼스 학습실 · 나의 오답 레포트' if student_mode else '캠퍼스 학습실 · 교수 수업 레포트')
         canvas.setStrokeColor(LINE)
         canvas.line(40, A4[1] - 36, A4[0] - 40, A4[1] - 36)
         canvas.line(40, 37, A4[0] - 40, 37)
-        canvas.drawString(40, 23, '교수용 · 선택 주차의 저장 결과')
+        canvas.drawString(40, 23, '학생용 · 본인의 제출 결과' if student_mode else '교수용 · 선택 주차의 저장 결과')
         canvas.drawRightString(A4[0] - 40, 23, '%s' % document.page)
         canvas.restoreState()
 
     output = io.BytesIO()
-    doc = SimpleDocTemplate(output, pagesize=A4, leftMargin=40, rightMargin=40, topMargin=54, bottomMargin=49, title='주차별 수업 레포트', author='캠퍼스 학습실', pageCompression=1)
+    doc = SimpleDocTemplate(output, pagesize=A4, leftMargin=40, rightMargin=40, topMargin=54, bottomMargin=49, title='나의 오답 레포트' if student_mode else '주차별 수업 레포트', author='캠퍼스 학습실', pageCompression=1)
     doc.build(story, onFirstPage=page_frame, onLaterPages=page_frame)
     return output.getvalue()
 

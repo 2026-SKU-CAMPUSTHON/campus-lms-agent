@@ -80,5 +80,50 @@ class PDFReportTests(unittest.TestCase):
         self.assertIn('선택한 주차에 아직 질문이 없습니다.', text)
 
 
+class StudentPDFReportTests(unittest.TestCase):
+    def student_snapshot(self):
+        report = json.loads((ROOT / 'docs/contracts/examples/student-wrong-report.json').read_text())
+        return {'report_type': 'student_wrong_answers', 'course_title': '나의 강의', 'generated_at': report['generated_at'], 'report': report}
+
+    def test_personal_report_marks_selected_correct_and_keeps_math_pages(self):
+        value = self.student_snapshot()
+        question = value['report']['weeks'][0]['attempts'][0]['wrong_questions'][0]
+        question['prompt'] = '수식 sin(nπx/L) <한글> & 오답'
+        question['explanation'] = '긴풀이시작 ' + '한국어 해설을 확인합니다. ' * 250 + ' 긴풀이끝'
+        question['sources'] = [{'source_type': 'transcript', 'slide_no': None, 'start_sec': 732, 'end_sec': 780, 'origin': 'youtube', 'material_name': '나의 강의', 'original_visible_to_students': False}]
+        reader, text = read(value)
+        self.assertGreater(len(reader.pages), 2)
+        for marker in ['나의 오답 레포트', 'sin(nπx/L) <한글> & 오답', '[정답]', '[내 선택]', '원본 비공개', '12:12 - 13:00']:
+            self.assertIn(marker, text)
+        for marker in ['긴풀이시작', '긴풀이끝']:
+            self.assertIn(marker, re.sub(r'\s+', '', text))
+        for page in reader.pages:
+            self.assertIn('학생용 · 본인의 제출 결과', page.extract_text())
+        self.assertNotIn('교수용', text)
+        self.assertNotIn('Q&A 내역', text)
+
+    def test_unattempted_report_does_not_claim_all_correct(self):
+        value = self.student_snapshot()
+        report = value['report']
+        report['summary'] = {'submission_count': 0, 'total_count': 0, 'correct_count': 0, 'wrong_count': 0, 'correct_rate': None}
+        report['weeks'] = [report['weeks'][1]]
+        reader, text = read(value)
+        self.assertEqual(len(reader.pages), 1)
+        self.assertIn('아직 제출한 퀴즈가 없습니다.', text)
+        self.assertNotIn('모두 맞혔습니다', text)
+
+    def test_perfect_report_does_not_print_correct_question_content(self):
+        value = self.student_snapshot()
+        report = value['report']
+        report['summary'].update({'wrong_count': 0, 'correct_count': 1, 'correct_rate': 1})
+        for week in report['weeks']:
+            for attempt in week['attempts']:
+                attempt['correct_count'] = attempt['total_count']
+                attempt['wrong_questions'] = []
+        _, text = read(value)
+        self.assertIn('모두 맞혔습니다. 오답이 없습니다.', text)
+        self.assertIn('100%', text)
+
+
 if __name__ == '__main__':
     unittest.main()

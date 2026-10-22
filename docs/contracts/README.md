@@ -1,4 +1,6 @@
-# API 0.9.0-report-pdf.1 / Worker 큐 draft-1
+# API 0.10.0-student-report.1 / Worker 큐 draft-1
+
+학생 전용 wrong-answers JSON/PDF를 추가했다. 세션 본인의 저장 제출을 강의/주차로 제한하고 오답의 내 선택·정답·풀이·페이지/시간 출처만 제공한다. 학생 ID/제출 ID 임의 필터는 받지 않고 미응시/모두 정답을 구분한다. StudentWrongReport/Week/Attempt/Question/Metrics와 합성 student-wrong-report.json을 함께 추가했다. 모델 호출은 없으며 [명세](../reports.md#학생-개인-오답-레포트)를 따른다.
 
 교수 전용 GET reports/pdf를 추가했다. 선택 주차의 퀴즈·문항별 결과·Q&A 전체 대화를 application/pdf attachment로 반환한다. 기존 QuizReport/QAReport 샘플과 계산 기준을 재사용하고 내부 판단은 제외한다. 한글/수학 글꼴을 포함하며 모델을 호출하지 않는다. 설치·제약·권한은 [레포트 명세](../reports.md#pdf-다운로드)를 따른다.
 

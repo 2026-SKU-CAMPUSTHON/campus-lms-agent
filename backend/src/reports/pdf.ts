@@ -1,10 +1,11 @@
 import {spawn} from 'node:child_process';
 import {resolve} from 'node:path';
 import {HttpError} from '../errors.js';
-import type {QAReport,QuizReport} from './types.js';
+import type {QAReport,QuizReport,StudentWrongReport} from './types.js';
 export interface ReportSnapshot {course_title:string;generated_at:string;quiz:QuizReport;qa:QAReport}
+export interface StudentReportSnapshot {report_type:'student_wrong_answers';course_title:string;generated_at:string;report:StudentWrongReport}
 /** Pass an authorized snapshot over stdin, without files, shell evaluation or API keys. */
-export function renderReportPDF(snapshot:ReportSnapshot,root:string):Promise<Buffer> {
+export function renderReportPDF(snapshot:ReportSnapshot|StudentReportSnapshot,root:string):Promise<Buffer> {
  const input=JSON.stringify(snapshot);
  if(Buffer.byteLength(input)>16*1024*1024)throw new HttpError(422,'REPORT_TOO_LARGE','레포트가 너무 큽니다. 주차를 나누어 다운로드해 주세요.');
  return new Promise((resolvePDF,reject)=> {

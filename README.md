@@ -104,3 +104,6 @@ npm run test:e2e
 교수 **수업 레포트**에서 주차를 선택하고 **PDF 다운로드**를 누르면 요약·주차별 참여율/정답률·문항별 정답/풀이/출처·Q&A 전체 대화를 한 파일로 받는다. 생성에 모델 API를 사용하지 않는다. 기존 설치에 `worker/requirements.txt`를 다시 설치하면 ReportLab이 추가된다. 한글/수식 글꼴과 라이선스는 worker/fonts에 동봉했다. [내용·권한·제약](docs/reports.md#pdf-다운로드)을 따른다.
 
 로컬 자동 검사도 같은 Python 패키지를 사용하도록 `source .venv-worker/bin/activate` 후 `npm test`, `npm run test:e2e`를 실행한다. CI에서는 worker/requirements.txt를 기본 Python에 설치한다.
+
+
+학생은 **오답 레포트**에서 한 개/여러 개/전체 주차를 선택하고 **오답 PDF 다운로드**를 누른다. 본인이 제출한 퀴즈의 오답·내 선택·정답·풀이·페이지/시간 출처를 담는다. 미응시와 모두 정답을 구분하고 미제출 문항의 정답이나 다른 학생 기록을 제공하지 않는다. 교수 PDF와 같은 설치 환경/글꼴을 재사용하므로 추가 키·모델 호출은 없다. [학생 오답 레포트 명세](docs/reports.md#학생-개인-오답-레포트)를 따른다.

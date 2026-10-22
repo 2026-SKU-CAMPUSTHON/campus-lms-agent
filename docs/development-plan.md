@@ -67,3 +67,8 @@
 ## 교수 PDF 다운로드 후속
 
 사용자 요청으로 feat/ab-6-report-pdf에서 교수 PDF 다운로드를 구현한다(PR #14 기반). A/B와 공용 계약·Python 의존성·배포 글꼴에 영향을 주며 이슈 #6에 공유했다. API 0.9.0-report-pdf.1 / Worker 큐 draft-1 유지. PDF 범위는 검토 인계하고 Supabase/배포/리허설이 남아 이슈 전체는 in_progress를 유지한다.
+
+
+## 학생 개인 오답 PDF 후속
+
+사용자 요청으로 feat/ab-6-student-wrong-pdf에서 학생 주차별 개인 오답 조회·PDF를 구현한다(PR #15 기반). A/B와 공용 API/샘플·Python 렌더링에 영향을 주며 이슈 #6에 공유했다. API 0.10.0-student-report.1 / Worker 큐 draft-1 유지. 학생 ID를 클라이언트에서 받지 않고 저장된 본인 제출만 사용한다. 다음 담당은 선행 PR부터 검토하고 Supabase/배포/리허설을 이어간다.

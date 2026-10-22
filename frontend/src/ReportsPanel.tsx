@@ -1,6 +1,7 @@
-import {useEffect,useState,useRef} from 'react';
+import {useEffect,useState} from 'react';
 import {BarChart3,ChevronDown,ChevronLeft,ChevronRight,Clock,Download,LoaderCircle,MessageCircle,RefreshCw} from 'lucide-react';
 import {api} from './api';
+import {usePDFDownload} from './usePDFDownload';
 import {SourceCitations} from './SourceCitations';
 import type {Week} from '../../backend/src/types';
 import type {QuizReport,QAReport} from '../../backend/src/reports/types';
@@ -10,9 +11,7 @@ const labels:Record<ThreadState,string>={open:'답변 준비 중',awaiting_stude
 const roleNames={student:'학생',assistant:'AI',professor:'교수님'};
 export function ReportsPanel({courseId,weeks}:{courseId:string;weeks:Week[]}) {
  const [selected,setSelected]=useState(()=>weeks.map(w=>w.week_id)),[page,setPage]=useState(1),[refresh,setRefresh]=useState(0);
- const [downloading,setDownloading]=useState(false),[downloadError,setDownloadError]=useState('');
- const downloadAbort=useRef<AbortController|null>(null);
- useEffect(()=>()=>downloadAbort.current?.abort(),[]);
+ const {downloading,downloadError,clearDownloadError,download:downloadPDF}=usePDFDownload();
  const [quiz,setQuiz]=useState<QuizReport|null>(null),[qa,setQA]=useState<QAReport|null>(null),[loading,setLoading]=useState(false),[error,setError]=useState('');
  const selection=selected.join(',');
  useEffect(()=> {
@@ -22,21 +21,8 @@ export function ReportsPanel({courseId,weeks}:{courseId:string;weeks:Week[]}) {
   void Promise.all([api<QuizReport>(`/courses/${courseId}/reports/quizzes?${query}`,{signal:controller.signal}),api<QAReport>(`/courses/${courseId}/reports/qa?${query}&page=${page}&page_size=25`,{signal:controller.signal})]).then(([q,a])=>{if(!controller.signal.aborted){setQuiz(q);setQA(a)}}).catch(e=>{if(!controller.signal.aborted)setError(e instanceof Error?e.message:'레포트를 불러오지 못했습니다.')}).finally(()=>{if(!controller.signal.aborted)setLoading(false)});
   return()=>controller.abort();
  },[courseId,selection,page,refresh]);
- const choose=(ids:string[])=>{setSelected(ids);setPage(1);setDownloadError('')};
- async function download() {
-  if(downloading||!selected.length)return;setDownloading(true);setDownloadError('');
-  const controller=new AbortController();downloadAbort.current=controller;
-  try {
-   const response=await fetch(`/api/courses/${courseId}/reports/pdf?week_ids=${encodeURIComponent(selection)}`,{credentials:'same-origin',signal:controller.signal});
-   if(!response.ok){const problem=await response.json().catch(()=>null);throw new Error(problem?.message||'PDF를 다운로드하지 못했습니다. 다시 시도해 주세요.')}
-   if(!response.headers.get('Content-Type')?.includes('application/pdf'))throw new Error('PDF 응답을 확인하지 못했습니다. 다시 시도해 주세요.');
-   const blob=await response.blob();if(controller.signal.aborted)return;
-   const filename=response.headers.get('Content-Disposition')?.match(/filename="([^"]+)"/)?.[1]||'campus-report.pdf';
-   const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=filename;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
-  }catch(error){if(!controller.signal.aborted)setDownloadError(error instanceof Error?error.message:'PDF를 다운로드하지 못했습니다.')}
-  finally{if(!controller.signal.aborted)setDownloading(false)}
- }
-
+ const choose=(ids:string[])=>{setSelected(ids);setPage(1);clearDownloadError()};
+ const download=()=>downloadPDF(`/api/courses/${courseId}/reports/pdf?week_ids=${encodeURIComponent(selection)}`);
  const all=selected.length===weeks.length;
  return <section className="reports" aria-label="교수 주차별 레포트">
   <section className="panel report-controls"><div className="report-control-heading"><div><h2>확인할 주차</h2><p className="helper">주차를 선택하면 퀴즈와 Q&A를 함께 조회해요.</p></div><div className="report-control-actions"><button className="secondary" disabled={loading||downloading||!selected.length} onClick={()=>setRefresh(n=>n+1)}><RefreshCw size={15}/>새로고침</button><button className="primary" disabled={loading||downloading||!selected.length||!!error} onClick={()=>void download()}>{downloading?<LoaderCircle size={15} className="spin"/>:<Download size={15}/>}PDF 다운로드</button></div></div>
