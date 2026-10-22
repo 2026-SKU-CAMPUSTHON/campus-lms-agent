@@ -16,7 +16,7 @@ function sourceId(material:string,page:number|string,part:number) {
  return `${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-8${h.slice(17,20)}-${h.slice(20,32)}`;
 }
 /** 로컬 시연용 단어 검색. Supabase 벡터 검색으로 교체할 경계다. */
-export function retrieve(materials:Material[],course:string,week:string,query:string,limit=6):Passage[] {
+export function materialPassages(materials:Material[],course:string,week:string):Passage[] {
  const candidates:Passage[]=[];
  for(const m of materials) {
   if(m.course_id!==course||m.week_id!==week||m.status!=='completed')continue;
@@ -41,6 +41,10 @@ export function retrieve(materials:Material[],course:string,week:string,query:st
    if(group)add(group);
   }
  }
+ return candidates;
+}
+export function retrieve(materials:Material[],course:string,week:string,query:string,limit=6):Passage[] {
+ const candidates=materialPassages(materials,course,week);
  const queryTerms=terms(query,128);if(!queryTerms.length)return [];
  const documentTerms=candidates.map(c=>new Set(terms(c.text)));
  const frequencies=new Map(queryTerms.map(t=>[t,documentTerms.filter(tokens=>tokens.has(t)).length]));

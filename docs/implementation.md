@@ -17,7 +17,7 @@ Supabase 설정이 없어 첫 기능은 로컬 SQLite 저장 어댑터로 실행
 
 ## 구현 계약
 
-계약 버전은 `0.6.0-youtube.1`이다. `openapi.yaml`에서 `x-implementation-status`로 구현된 API와 후속 계획 API를 구분한다. 구현된 로컬 API는 세션 쿠키를 사용하고, 후속 Supabase API는 JWT 설계로 남긴다.
+계약 버전은 `0.7.0-youtube-quiz.1`이다. `openapi.yaml`에서 `x-implementation-status`로 구현된 API와 후속 계획 API를 구분한다. 구현된 로컬 API는 세션 쿠키를 사용하고, 후속 Supabase API는 JWT 설계로 남긴다.
 
 Worker JSON 스키마 draft-1은 향후 작업 큐 통합 계약이다. 현재 CLI 프로세스는 `document_extract.py <파일> <시작> <끝>`으로 `{total_slides, slides:[{slide_no,text}]}`를 반환한다. 장기 키·서명 URL은 결과에 포함하지 않는다.
 
@@ -77,3 +77,9 @@ backend/src/reports/에서 저장된 퀴즈와 Q&A를 집계한다. 현재 수�
 링크의 t/start 시각과 선택 범위를 보존하며 ASR의 상대 시간을 원본 절대 시간으로 환산한다. 완료 전/실패 자료와 범위 밖 결과는 검색하지 않는다. Source.origin=youtube를 Q&A·레포트에 보존하고, 비공개 학생에게 영상 ID/URL을 반환하지 않는다. 권한 있는 원본 재생은 앱의 playback/original에서 302로 정규 YouTube 시작 시각에 이동한다. 파일 재생·Range와 구분한다.
 
 yt-dlp는 선택한 고정 URL과 Node 런타임을 사용하며 사용자 URL을 셸에 넘기지 않는다. 쿠키/계정/프록시로 제한을 우회하지 않는다. 실제 수집·ASR과 자동 검사 대역은 [검증 기록](verification.md), 의존성·전체 제한은 [YouTube 명세](youtube.md)를 따른다. Supabase 큐 계약을 구현한 것은 아니다.
+
+## YouTube 퀴즈
+
+완료된 YouTube 자료의 선택 구간을 materialPassages로 청크화하고, transcript.ts가 전체 근거를 그룹/배치로 Claude 또는 명시적 Codex에 전달한다. 응답의 source_ids를 검증한 뒤 서버가 실제 시간 Source로 연결한다. 기존 문서용 slide_nos 생성 경로는 유지한다. 로컬 파일 미디어의 퀴즈 출제는 아직 지원하지 않는다.
+
+근거 부족·형식/출처 오류·중복·후속 배치 실패는 Job 오류로 남기고 부분 초안을 만들지 않는다. 교수 검토/선택 게시·학생 서버 채점·개인 오답·레포트는 기존 데이터를 재사용하며 공용 Source 타입을 확장했다. 페이지/시간을 구분하는 출처 컴포넌트를 교수 검토·학생 오답·문항별 레포트에도 사용한다. 모델 지침과 구조/출처 검사는 내용의 정답을 보증하지 않는다.

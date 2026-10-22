@@ -38,7 +38,6 @@ describe('YouTube 입력·권한·작업과 Q&A (네트워크·모델 대역)',(
   expect(imported.mock.calls[0][0]).toMatchObject({video_id:'XwsPTAnFRsk',start_sec:732,end_sec:852});
   const m=material(app,receipt.material_id);expect(m.youtube?.method).toBe('captions');expect(m.name).toBe(data.name);
   expect(retrieve([m],IDS.course,IDS.week2,'전공 활용')).toHaveLength(0);expect(retrieve([m],IDS.otherCourse,IDS.week,'전공 활용')).toHaveLength(0);
-  await prof.post(base+'/quiz-drafts').set('Idempotency-Key',randomUUID()).send({material_ids:[m.material_id],question_count:1}).expect(422);
  });
  it('비공개 전사/원본 링크를 보호하면서 Q&A·레포트의 절대 시간 출처를 보존한다',async()=> {
   const app=setup(),prof=await login(app),student=await login(app,IDS.student);const receipt=(await prof.post(base+'/youtube').send(body)).body;await app.waitForJobs();

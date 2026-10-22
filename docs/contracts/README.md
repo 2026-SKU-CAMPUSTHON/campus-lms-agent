@@ -1,4 +1,6 @@
-# API 0.6.0-youtube.1 / Worker 큐 draft-1
+# API 0.7.0-youtube-quiz.1 / Worker 큐 draft-1
+
+완료된 YouTube 자료를 기존 quiz-drafts 입력으로 허용한다. DraftQuestion/WrongQuestion/ReportQuestion.sources를 공용 Source(문서 페이지 또는 전사 시간)로 확장하고, youtube-quiz-draft.json·youtube-attempt-result.json을 합성 샘플로 추가했다. 게시 전 PublicQuiz에는 출처·정답·풀이를 넣지 않는다. 실제 시간은 서버의 검증된 근거 ID로 연결하며 모델 생성 시간/URL을 받지 않는다. 기존 문서 형식·선택 게시·서버 채점·개인 결과 계약과 Worker 큐는 유지한다.
 
 YouTube JSON 등록 API를 추가하고 MediaMaterialSummary의 선택적 youtube 메타데이터와 TranscriptSource.origin을 확장했다. 전체 길이와 선택 구간, 링크 시간 처리, 캡션/ASR 방식, 공개 권한·302 원본 이동은 [YouTube 명세](../youtube.md)를 따른다. 기존 미디어·문서 응답과 Worker 큐 계약은 유지한다. youtube-request.json·qa-youtube.json은 합성 계약 샘플이며 실제 자막/강의 내용이 아니다.
 

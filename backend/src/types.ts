@@ -9,7 +9,7 @@ export interface TranscriptSource {material_id:string;chunk_id:string;source_typ
 export type Source=DocumentSource|TranscriptSource;
 export interface Option { option_id: string; text: string }
 export interface PublicQuestion { question_id: string; prompt: string; options: Option[] }
-export interface DraftQuestion extends PublicQuestion { correct_option_id: string; explanation: string; sources: DocumentSource[] }
+export interface DraftQuestion extends PublicQuestion { correct_option_id: string; explanation: string; sources: Source[] }
 export interface GeneratedQuestion { prompt: string; options: string[]; correct_index: number; explanation: string; slide_nos: number[] }
 export interface QuizDraft { draft_id: string; week_id: string; questions: DraftQuestion[] }
 export interface PublicQuiz { quiz_id: string; week_id: string; questions: PublicQuestion[] }

@@ -28,7 +28,7 @@ for segment in read('examples/worker-audio-result.json')['segments']:
 # 실패 상태와 성공 결과가 섞인 응답을 거부하는지 확인한다.
 bad = {**result, 'status': 'failed'}
 assert list(validator.iter_errors(bad)), 'failed result must contain error and no segments'
-for schema_name, name in [('PublicQuiz', 'public-quiz.json'), ('AttemptResult', 'attempt-result.json'), ('Thread', 'qa-clarification.json'), ('Thread', 'qa-handoff.json'), ('QuizReport', 'quiz-report.json'), ('QAReport', 'qa-report.json'), ('Thread', 'qa-transcript.json'), ('Transcript', 'transcript.json'), ('Thread', 'qa-youtube.json'), ('YouTubeImportRequest', 'youtube-request.json')]:
+for schema_name, name in [('PublicQuiz', 'public-quiz.json'), ('AttemptResult', 'attempt-result.json'), ('Thread', 'qa-clarification.json'), ('Thread', 'qa-handoff.json'), ('QuizReport', 'quiz-report.json'), ('QAReport', 'qa-report.json'), ('Thread', 'qa-transcript.json'), ('Transcript', 'transcript.json'), ('Thread', 'qa-youtube.json'), ('YouTubeImportRequest', 'youtube-request.json'), ('QuizDraft', 'youtube-quiz-draft.json'), ('AttemptResult', 'youtube-attempt-result.json')]:
     schema = {'$ref': '#/components/schemas/' + schema_name, 'components': api['components']}
     OAS30Validator(schema, format_checker=FormatChecker()).validate(read('examples/' + name))
 def check_public(value):

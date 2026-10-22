@@ -9,6 +9,7 @@ import { HttpError } from './errors.js';
 import { extractDocument } from './quiz-generation/extract.js';
 import { createGeminiGenerator } from './quiz-generation/gemini.js';
 import { generateAcrossRange, type Generator } from './quiz-generation/questions.js';
+import {generateYouTubeQuestions,createClaudeTranscriptGenerator,createCodexTranscriptGenerator,type TranscriptGenerator} from './quiz-generation/transcript.js';
 import { codexReady, createCodexGenerator } from './quiz-generation/codex.js';
 import { createOpenAIGenerator } from './quiz-generation/openai.js';
 import {createClaudeGenerator} from './quiz-generation/claude.js';
@@ -28,7 +29,7 @@ import type { AttemptResult, Course, DraftQuestion, Job, Material, PublicQuiz, Q
 
 interface Row { id:string; course_id:string; week_id:string; data:string; draft_id?:string }
 interface AuthedRequest extends Request { user:User }
-export interface AppOptions { root:string; dataDir:string; demoAuth:boolean; apiKey?:string; model?:string; provider?:Provider; codexBin?:string; generator?:Generator; transcriber?:Transcriber; youtubeImporter?:YouTubeImporter; jevApiKey?:string; jevModel?:string; jevMinimum?:number; qaJudge?:Judge; qaGenerator?:QAGenerator; frontendDir?:string }
+export interface AppOptions { root:string; dataDir:string; demoAuth:boolean; apiKey?:string; model?:string; provider?:Provider; codexBin?:string; generator?:Generator; transcriptGenerator?:TranscriptGenerator; transcriber?:Transcriber; youtubeImporter?:YouTubeImporter; jevApiKey?:string; jevModel?:string; jevMinimum?:number; qaJudge?:Judge; qaGenerator?:QAGenerator; frontendDir?:string }
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 const parse=<T>(row:{data:string}):T=>JSON.parse(row.data) as T;
 const uuid=z.string().uuid();
@@ -47,6 +48,7 @@ export function createApp(options:AppOptions) {
   const model=options.model || (provider==='claude'?DEFAULT_CLAUDE_MODEL:provider==='codex'?'Codex 기본 모델':provider==='openai'?'gpt-6.1-sol':'gemini-3.8-flash');
   const ready=Boolean(options.generator) || (provider==='codex'?codexReady(options.codexBin):Boolean(options.apiKey));
   const generate=options.generator ?? (provider==='claude'?createClaudeGenerator({apiKey:options.apiKey,model}):provider==='codex'?createCodexGenerator(options.codexBin,options.model):provider==='openai'?createOpenAIGenerator(options.apiKey,model):createGeminiGenerator(options.apiKey,model));
+  const generateTranscript=options.transcriptGenerator??(provider==='claude'?createClaudeTranscriptGenerator({apiKey:options.apiKey,model}):createCodexTranscriptGenerator({binary:options.codexBin,model:options.model}));
   const qa=new QAService(store,options.qaJudge ?? createJevJudge(options.jevApiKey,options.jevModel),options.qaGenerator ?? (provider==='claude'?createQAClaudeGenerator({apiKey:options.apiKey,model}):provider==='codex'?createQACodexGenerator({binary:options.codexBin,model:options.model}):async()=>{throw new HttpError(503,'QA_PROVIDER_UNSUPPORTED','Q&A 생성은 Claude 또는 Codex 제공자로 설정해 주세요.',true)}),options.jevMinimum);
   const qaReady=Boolean(options.qaJudge || options.jevApiKey) && Boolean(options.qaGenerator || (['claude','codex'].includes(provider)&&ready));
   const active=new Set<Promise<void>>();
@@ -77,7 +79,7 @@ export function createApp(options:AppOptions) {
     next();
   });
   app.use(express.json({limit:'128kb'}));
-  app.get('/api/health',(_req,res)=>res.json({status:'ok',mode:'local-development',ai_configured:ready,provider,model,contract_version:'0.6.0-youtube.1',qa_configured:qaReady,jev_configured:Boolean(options.jevApiKey || options.qaJudge),jev_model:options.jevModel || 'jev-1.13.0'}));
+  app.get('/api/health',(_req,res)=>res.json({status:'ok',mode:'local-development',ai_configured:ready,provider,model,contract_version:'0.7.0-youtube-quiz.1',qa_configured:qaReady,jev_configured:Boolean(options.jevApiKey || options.qaJudge),jev_model:options.jevModel || 'jev-1.13.0'}));
   app.get('/api/dev/accounts',(_req,res)=>res.json(store.all<{user_id:string;name:string}>('SELECT id AS user_id,name FROM users WHERE id != ?',IDS.outsider)));
   app.post('/api/dev/login',(req,res)=> {
     const id=z.object({user_id:uuid}).strict().parse(req.body).user_id;
@@ -186,21 +188,24 @@ export function createApp(options:AppOptions) {
       const row=resource('materials',id);membership(req,row.course_id,'professor');
       const material=parse<Material>(row);
       if(row.course_id!==course || row.week_id!==week) throw new HttpError(422,'WRONG_WEEK','현재 주차의 자료만 사용할 수 있습니다.');
-      if(!isDocument(material))throw new HttpError(422,'DOCUMENT_REQUIRED','퀴즈는 PDF/PPTX 자료로 생성해 주세요. 전사는 Q&A 근거로 사용합니다.');
+      if(!isDocument(material)&&!material.youtube)throw new HttpError(422,'DOCUMENT_OR_YOUTUBE_REQUIRED','퀴즈는 PDF/PPTX 또는 등록한 YouTube 강의를 선택해 주세요.');
       if(material.status!=='completed') throw new HttpError(409,'MATERIAL_NOT_READY','자료 처리 완료 후 문제를 생성해 주세요.');return material;
     });
-    if(!ready) throw new HttpError(503,'AI_NOT_CONFIGURED',provider==='codex'?'Codex 로그인을 확인해 주세요. 터미널에서 codex login으로 연결할 수 있습니다.':provider==='openai'?'문제 생성용 GPT API 키가 설정되지 않았습니다. 서버 .env의 OPENAI_API_KEY를 설정해 주세요.':'문제 생성용 Gemini API 키가 설정되지 않았습니다. 서버 .env의 GEMINI_API_KEY를 설정해 주세요.');
+    if(!isDocument(materials[0])&&!options.transcriptGenerator&&!['claude','codex'].includes(provider))throw new HttpError(503,'YOUTUBE_QUIZ_PROVIDER_UNSUPPORTED','YouTube 퀴즈 생성은 Claude 또는 Codex 제공자로 설정해 주세요.');
+    if(isDocument(materials[0])?!ready:!options.transcriptGenerator&&!ready) throw new HttpError(503,'AI_NOT_CONFIGURED',provider==='claude'?'Claude API 키가 설정되지 않았습니다. 서버 .env의 ANTHROPIC_API_KEY를 설정해 주세요.':provider==='codex'?'Codex 로그인을 확인해 주세요. 터미널에서 codex login으로 연결할 수 있습니다.':provider==='openai'?'문제 생성용 GPT API 키가 설정되지 않았습니다. 서버 .env의 OPENAI_API_KEY를 설정해 주세요.':'문제 생성용 Gemini API 키가 설정되지 않았습니다. 서버 .env의 GEMINI_API_KEY를 설정해 주세요.');
     // 첫 범위는 자료 1개로 제한한다. 여러 PPT의 중복 페이지 번호 혼동을 막는다.
-    if(materials.length!==1) throw new HttpError(422,'ONE_MATERIAL_REQUIRED','현재는 PDF/PPTX 한 개씩 문제를 생성할 수 있습니다.');
+    if(materials.length!==1) throw new HttpError(422,'ONE_MATERIAL_REQUIRED','현재는 문서 또는 YouTube 강의 한 개씩 문제를 생성할 수 있습니다.');
     idempotent(req,res,()=> {
       if(store.get<{count:number}>("SELECT COUNT(*) AS count FROM jobs WHERE course_id=? AND json_extract(data,'$.status') IN ('queued','processing')",course)!.count>0) throw new HttpError(409,'JOB_IN_PROGRESS','이 강의의 진행 중인 작업을 마친 뒤 다시 생성해 주세요.');
       const job:Job={job_id:randomUUID(),status:'queued',result:null,error:null};putJob(course,job);
       const material=materials[0];
-      if(!isDocument(material))throw new HttpError(422,'DOCUMENT_REQUIRED','문서 자료를 선택해 주세요.');
       queue(course,job,async()=> {
-        const questions=await generateAcrossRange(material.slides,body.question_count,generate);
-        const chunkIds=new Map(material.slides.map(s=>[s.slide_no,randomUUID()]));
-        const draft:QuizDraft={draft_id:randomUUID(),week_id:week,questions:questions.map(q=>({question_id:randomUUID(),prompt:q.prompt,options:q.options.map((text,i)=>({option_id:String.fromCharCode(97+i),text})),correct_option_id:String.fromCharCode(97+q.correct_index),explanation:q.explanation,sources:[...new Set(q.slide_nos)].map(slide_no=>({material_id:material.material_id,chunk_id:chunkIds.get(slide_no)!,source_type:'document',slide_no,start_sec:null,end_sec:null}))}))};
+        const questions=await (async()=> {
+          if(!isDocument(material))return generateYouTubeQuestions(material,body.question_count,generateTranscript);
+          const generated=await generateAcrossRange(material.slides,body.question_count,generate),chunkIds=new Map(material.slides.map(s=>[s.slide_no,randomUUID()]));
+          return generated.map(q=>({...q,sources:[...new Set(q.slide_nos)].map(slide_no=>({material_id:material.material_id,chunk_id:chunkIds.get(slide_no)!,source_type:'document' as const,slide_no,start_sec:null,end_sec:null}))}));
+        })();
+        const draft:QuizDraft={draft_id:randomUUID(),week_id:week,questions:questions.map(q=>({question_id:randomUUID(),prompt:q.prompt,options:q.options.map((text,i)=>({option_id:String.fromCharCode(97+i),text})),correct_option_id:String.fromCharCode(97+q.correct_index),explanation:q.explanation,sources:q.sources}))};
         store.run('INSERT INTO drafts VALUES (?,?,?,?)',draft.draft_id,course,week,JSON.stringify(draft));return {draft_id:draft.draft_id};
       });return {status:202,body:job};
     });
