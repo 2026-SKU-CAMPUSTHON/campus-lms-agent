@@ -6,7 +6,7 @@ import re
 import unittest
 from pathlib import Path
 from pypdf import PdfReader
-from report_pdf import render_report
+from report_pdf import render_report, rate
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -69,6 +69,8 @@ class PDFReportTests(unittest.TestCase):
 
     def test_null_and_zero_are_distinct_and_empty_report_is_valid(self):
         value = snapshot()
+        self.assertEqual(rate(.0225), '2.3%')
+        self.assertEqual(rate(1), '100%')
         value['quiz']['summary']['correct_rate'] = 0
         value['quiz']['summary']['participation_rate'] = None
         value['qa']['threads'] = []

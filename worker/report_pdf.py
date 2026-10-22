@@ -5,6 +5,7 @@ import math
 import re
 import sys
 from datetime import datetime, timezone, timedelta
+from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from xml.sax.saxutils import escape
 from reportlab.lib import colors
@@ -31,7 +32,10 @@ def timestamp(value):
 
 
 def rate(value):
-    return '집계 없음' if value is None else ('%.1f' % (value * 100)).rstrip('0').rstrip('.') + '%'
+    if value is None:
+        return '집계 없음'
+    percent = (Decimal(str(value)) * 100).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+    return format(percent, 'f').rstrip('0').rstrip('.') + '%'
 
 
 def clock(seconds):
