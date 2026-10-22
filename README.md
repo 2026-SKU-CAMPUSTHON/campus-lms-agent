@@ -99,3 +99,8 @@ npm run test:e2e
 `node --import tsx scripts/verify-live-qa.ts`는 등록된 실제 첫 주차 자료를 읽어 임시 DB에서 실제 Jev·생성 제공자의 답변·추가 질문·승격·교수 답변을 검사한다. 실제 API 비용이 발생하며 메타데이터만 `.data/live-qa-verification.json`에 저장한다.
 
 계약 검사는 `requirements-contracts.txt`를 설치한 Python으로 `scripts/check_contracts.py`를 실행한다. [기획·페르소나](docs/product.md) · [기술 선택과 재사용 검토](docs/architecture.md) · [AI 협업 방법](docs/coordination.md)
+
+
+교수 **수업 레포트**에서 주차를 선택하고 **PDF 다운로드**를 누르면 요약·주차별 참여율/정답률·문항별 정답/풀이/출처·Q&A 전체 대화를 한 파일로 받는다. 생성에 모델 API를 사용하지 않는다. 기존 설치에 `worker/requirements.txt`를 다시 설치하면 ReportLab이 추가된다. 한글/수식 글꼴과 라이선스는 worker/fonts에 동봉했다. [내용·권한·제약](docs/reports.md#pdf-다운로드)을 따른다.
+
+로컬 자동 검사도 같은 Python 패키지를 사용하도록 `source .venv-worker/bin/activate` 후 `npm test`, `npm run test:e2e`를 실행한다. CI에서는 worker/requirements.txt를 기본 Python에 설치한다.

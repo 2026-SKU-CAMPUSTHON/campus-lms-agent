@@ -1,6 +1,6 @@
 # 교수 주차별 레포트
 
-API `0.4.0-reports.1`. 같은 강의의 교수만 조회한다. 학생은 탭을 볼 수 없고 API도 403으로 차단한다. 통계는 저장된 자료를 SQL과 코드로 계산하며 Claude·Jev를 다시 호출하지 않는다.
+현재 API `0.9.0-report-pdf.1` (화면 레포트 최초 계약은 `0.4.0-reports.1`). 같은 강의의 교수만 조회한다. 학생은 탭을 볼 수 없고 API도 403으로 차단한다. 통계는 저장된 자료를 SQL과 코드로 계산하며 Claude·Jev를 다시 호출하지 않는다.
 
 ## 화면과 조회
 
@@ -32,4 +32,21 @@ API `0.4.0-reports.1`. 같은 강의의 교수만 조회한다. 학생은 탭을
 - `GET /api/courses/{course_id}/reports/quizzes?week_ids=uuid,uuid`
 - `GET /api/courses/{course_id}/reports/qa?week_ids=uuid,uuid&page=1&page_size=25`
 
-week_ids 생략은 전체 주차다. 빈 값·잘못된 UUID·범위 밖 페이지 인수는 422, 소속 강의가 다른 주차는 404다. 주차 중복은 제거하며 주차 번호순으로 반환한다. 두 API는 각각 generated_at을 반환하므로 조회 시점을 구분할 수 있다. 보고서 파일 다운로드와 AI 서술형 요약은 이번 범위에 포함하지 않는다.
+week_ids 생략은 전체 주차다. 빈 값·잘못된 UUID·범위 밖 페이지 인수는 422, 소속 강의가 다른 주차는 404다. 주차 중복은 제거하며 주차 번호순으로 반환한다. 두 API는 각각 generated_at을 반환하므로 조회 시점을 구분할 수 있다. 교수 PDF 다운로드는 아래 명세를 따른다. AI 서술형 요약은 포함하지 않는다.
+
+
+## PDF 다운로드
+
+**수업 레포트**에서 한 개 또는 여러 주차를 고른 뒤 **PDF 다운로드**를 누른다. 전체 주차 선택도 가능하며 선택이 없으면 다운로드할 수 없다. 생성 중에는 주차 선택과 중복 다운로드를 잠근다. 오류는 화면에 표시하고 다시 다운로드할 수 있다. 조회 화면과 같은 SQL 계산 기준을 쓰며 PDF 요청 시점의 현재 결과를 새로 집계한다. 먼저 조회한 화면 이후 제출이 늘면 파일 수치도 달라질 수 있다.
+
+`GET /api/courses/{course_id}/reports/pdf?week_ids=uuid,uuid`는 같은 강의의 교수만 접근한다. week_ids 생략은 전체 주차다. 잘못된 인수는 422, 다른 강의 주차는 404, 학생·다른 강의 교수는 403이다. 성공은 application/pdf, Content-Disposition attachment(ASCII filename 및 UTF-8 filename*), Cache-Control no-store다. 파일은 서버 디스크에 남기지 않고 메모리에서 반환한다.
+
+PDF는 강의명·선택 주차·생성 시각(KST), 전체 요약, 주차별 비교표, 게시된 문항별 문제·보기·정답·풀이·정답률/분자/분모·페이지/영상 시간 출처, Q&A 학생 이름·현재 상태·추가 질문 횟수·승격 사유·오류·학생/AI/교수 메시지·출처를 포함한다. Q&A는 화면의 현재 페이지와 관계없이 선택 주차의 전체 대화를 포함한다. 내부 Jev 판단/확률, 학생 UUID, 모델 설정/키, 원본 파일 경로·전체 전사·원본 미디어 URL을 별도 필드로 추가하지 않는다. 텍스트 속 HTML/이미지 태그는 일반 텍스트로 출력하고 외부 자료를 로드하지 않는다.
+
+하나의 SQLite 트랜잭션에서 퀴즈/Q&A 스냅샷을 만들고 공통 생성 시각을 기록한다. 이후 Python ReportLab에 JSON을 stdin으로 전달하고 PDF bytes를 stdout으로 받는다. 셸을 실행하지 않으며 API 키/토큰 환경 변수를 자식 프로세스에서 제거한다. Worker 큐 draft-1과 별개인 로컬 렌더링 CLI다. Claude·Jev 호출과 과금은 추가되지 않는다.
+
+`worker/requirements.txt`의 reportlab==4.4.10과 pypdf를 설치하고 기존 PYTHON_BIN을 같은 환경으로 지정한다. CI도 같은 의존성을 설치한다. Nanum Gothic과 수학/그리스 문자용 DejaVu Sans를 파일 안에 포함한다. 배포 시 worker/report_pdf.py와 worker/fonts 전체를 함께 제공해야 한다. [글꼴 원본·라이선스](../worker/fonts/README.md)를 보존한다. 두 글꼴에도 없는 문자는 누락하지 않고 [U+코드]로 표시하며 파일 끝에 안내한다. 한글 줄바꿈·긴 문장·표 반복 머리글·페이지 번호를 지원한다.
+
+명시적 한도는 요청당 게시 문항 2,000개·Q&A 1,000개·입력 JSON 16MiB·결과 PDF 32MiB·생성 30초이며 앱당 동시 생성은 2개다. 초과 시 잘라내지 않고 422 REPORT_TOO_LARGE 또는 503 REPORT_TIMEOUT, 동시 요청 초과는 429 REPORT_BUSY로 주차 분할/재시도를 안내한다. Python/의존성/글꼴 문제는 503 REPORT_PDF_UNAVAILABLE이며 오류 JSON을 정상 PDF로 저장하지 않는다. 큰 학기 전체 자료의 백그라운드 내보내기는 후속 작업이다.
+
+공식 구현 참고: [ReportLab 한글/TrueType 글꼴](https://docs.reportlab.com/reportlab/userguide/ch3_fonts/), [문단/CJK 줄바꿈](https://docs.reportlab.com/reportlab/userguide/ch6_paragraphs/), [페이지 레이아웃](https://docs.reportlab.com/reportlab/userguide/ch5_platypus/).

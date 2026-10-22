@@ -1,4 +1,6 @@
-# API 0.8.0-draft-edit.1 / Worker 큐 draft-1
+# API 0.9.0-report-pdf.1 / Worker 큐 draft-1
+
+교수 전용 GET reports/pdf를 추가했다. 선택 주차의 퀴즈·문항별 결과·Q&A 전체 대화를 application/pdf attachment로 반환한다. 기존 QuizReport/QAReport 샘플과 계산 기준을 재사용하고 내부 판단은 제외한다. 한글/수학 글꼴을 포함하며 모델을 호출하지 않는다. 설치·제약·권한은 [레포트 명세](../reports.md#pdf-다운로드)를 따른다.
 
 교수의 미게시 문항 수정 PATCH를 구현했다. QuizDraft.version은 필수이며 버전 없는 기존 초안은 1로 해석한다. 수정과 게시에 expected_version·Idempotency-Key를 요구하고 오래된 버전은 409다. 게시 요청의 버전 누락은 422이므로 이전 호출 코드를 함께 갱신해야 한다. 문항·보기 ID·순서와 출처를 보존하고 게시 후 수정은 차단한다. edit-draft-question.json은 합성 샘플이며 [수정 명세](../draft-edit.md)를 따른다.
 

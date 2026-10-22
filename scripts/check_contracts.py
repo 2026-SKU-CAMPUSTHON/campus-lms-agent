@@ -47,3 +47,10 @@ assert hashlib.sha256(svg.read_bytes()).hexdigest() == source['sha256']
 assert 'Jev' in svg.read_text()
 assert read('examples/qa-handoff.json')['clarification_count'] == 1
 print('PASS: OpenAPI, Worker examples, public quiz, Figma SVG provenance')
+
+fonts = ROOT / 'worker/fonts'
+for manifest in ['source.json', 'dejavu-source.json']:
+    for entry in json.loads((fonts / manifest).read_text())['files']:
+        assert hashlib.sha256((fonts / entry['file']).read_bytes()).hexdigest() == entry['sha256'], 'PDF font provenance mismatch'
+assert 'application/pdf' in api['paths']['/courses/{course_id}/reports/pdf']['get']['responses']['200']['content']
+print('PASS: PDF download contract and font provenance')
