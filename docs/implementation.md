@@ -1,10 +1,10 @@
 # 구현 현황
 
-2026-10-22 기준. 전체 목표 아키텍처와 현재 구현을 구분한다.
+2026-10-23 기준. 전체 목표 아키텍처와 현재 구현을 구분한다. 팀원 접속·테스트는 README, 다음 개발자 인계는 [team-handoff.md](team-handoff.md)를 따른다.
 
 | 구성 | 현재 구현 | 다음 단계 |
 | --- | --- | --- |
-| 웹 | React·Vite·TypeScript, 실제 로그인/초대 가입·강의 생성·팀원 초대, 교수/학생 퀴즈·Q&A·PDF | 원격 환경 접속 검증 |
+| 웹 | React·Vite·TypeScript, 실제 로그인/초대 가입·강의 생성·팀원 초대, 교수/학생 퀴즈·Q&A·PDF, 외부 HTTPS 검증 | 팀원 역할별 리허설·사용성 보완 |
 | API | Express, 강의별 권한, 비공개 자료, 선택 게시, 서버 채점, 개인 결과 | 실제 강의 관리 |
 | 자료 처리 | Python 별도 프로세스, PDF(pypdf)·PPTX(OOXML), 페이지 순서·범위 보존 | Docling/OCR·벡터 색인 |
 | 모델 | 기본 Claude API(퀴즈·Q&A), 선택적 Codex CLI 및 이전 퀴즈용 OpenAI·Gemini 어댑터 | 배포 환경의 운영·예산 관리 |
