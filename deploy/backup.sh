@@ -9,5 +9,5 @@ compose=(sudo -n docker compose --env-file .env.production)
 trap '"${compose[@]}" start app >/dev/null' EXIT
 "${compose[@]}" exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" exec mysqldump --user="$MYSQL_USER" --single-transaction --no-tablespaces --set-gtid-purged=OFF "$MYSQL_DATABASE"' | gzip > "$target/database.sql.gz"
 "${compose[@]}" run --rm --no-deps --entrypoint tar app --exclude=./models -C /data -czf - . > "$target/materials.tar.gz"
-(git rev-parse HEAD 2>/dev/null || basename "$PWD") > "$target/commit.txt"
+(git rev-parse HEAD 2>/dev/null || basename "$(pwd -P)") > "$target/commit.txt"
 echo "Backup saved: $target"
