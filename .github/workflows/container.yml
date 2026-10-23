@@ -1,0 +1,43 @@
+name: Container
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  production-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare disposable configuration
+        run: |
+          umask 077
+          cat > .env.production <<'EOF'
+          APP_HOST=campus.example.test
+          MYSQL_PASSWORD=container-only-mysql-password
+          MYSQL_ROOT_PASSWORD=container-only-root-password
+          BOOTSTRAP_EMAIL=teacher@example.test
+          BOOTSTRAP_PASSWORD=Container-only-password-2026
+          BOOTSTRAP_NAME=컨테이너 교수
+          EOF
+      - name: Build and start private app and MySQL
+        run: docker compose --env-file .env.production up -d --build --wait --wait-timeout 180 mysql app
+      - name: Verify document, transcription and PDF dependencies
+        run: docker compose --env-file .env.production exec -T app /opt/worker/bin/python -c 'import pypdf, reportlab, faster_whisper, av, youtube_transcript_api, yt_dlp'
+      - name: Create public synthetic document
+        run: |
+          docker compose --env-file .env.production cp scripts/create-sample-pdf.py app:/tmp/create-sample-pdf.py
+          docker compose --env-file .env.production exec -T app /opt/worker/bin/python -c "import runpy; runpy.run_path('/tmp/create-sample-pdf.py')['create']('/tmp/sample.pdf')"
+      - name: Login, invite, signup and upload
+        run: docker compose --env-file .env.production exec -T app node --input-type=module - seed < scripts/smoke-production.mjs
+      - name: Recreate containers, keeping persistent volumes
+        run: docker compose --env-file .env.production up -d --force-recreate --wait --wait-timeout 180 mysql app
+      - name: Verify sessions, course, original and private PDF survived
+        run: docker compose --env-file .env.production exec -T app node --input-type=module - check < scripts/smoke-production.mjs
+      - name: Show container state
+        if: always()
+        run: docker compose --env-file .env.production ps
+      - name: Cleanup disposable containers
+        if: always()
+        run: docker compose --env-file .env.production down -v

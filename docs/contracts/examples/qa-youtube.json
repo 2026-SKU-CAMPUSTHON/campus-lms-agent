@@ -1,0 +1,52 @@
+{
+  "thread_id": "50000000-0000-4000-8000-000000000001",
+  "week_id": "30000000-0000-4000-8000-000000000001",
+  "student_name": "테스트 학생",
+  "state": "resolved",
+  "clarification_count": 1,
+  "processing_status": "idle",
+  "version": 4,
+  "messages": [
+    {
+      "message_id": "60000000-0000-4000-8000-000000000001",
+      "author_role": "student",
+      "kind": "question",
+      "text": "이거가 무엇인가요?",
+      "sources": [],
+      "created_at": "2026-10-21T04:00:00Z"
+    },
+    {
+      "message_id": "60000000-0000-4000-8000-000000000002",
+      "author_role": "assistant",
+      "kind": "clarification",
+      "text": "어떤 강의 개념인지 알려 주세요.",
+      "sources": [],
+      "created_at": "2026-10-21T04:00:01Z"
+    },
+    {
+      "message_id": "80000000-0000-4000-8000-000000000099",
+      "author_role": "assistant",
+      "kind": "answer",
+      "text": "푸리에 급수는 주기 함수를 사인과 코사인의 합으로 표현합니다.",
+      "created_at": "2026-10-22T00:00:00Z",
+      "sources": [
+        {
+          "material_id": "40000000-0000-4000-8000-000000000099",
+          "chunk_id": "70000000-0000-4000-8000-000000000099",
+          "source_type": "transcript",
+          "slide_no": null,
+          "start_sec": 732,
+          "end_sec": 780,
+          "material_name": "합성 YouTube 강의",
+          "media_type": "video",
+          "original_visible_to_students": true,
+          "origin": "youtube"
+        }
+      ]
+    }
+  ],
+  "error": null,
+  "handoff_reason": null,
+  "created_at": "2026-10-21T04:00:00Z",
+  "updated_at": "2026-10-21T04:00:01Z"
+}

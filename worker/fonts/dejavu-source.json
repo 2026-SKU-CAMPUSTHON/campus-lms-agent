@@ -1,0 +1,19 @@
+{
+  "family": "DejaVu Sans",
+  "version": "2.37",
+  "license_file": "DejaVu-LICENSE.txt",
+  "upstream": "https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-fonts-ttf-2.37.tar.bz2",
+  "archive_sha256": "fa9ca4d13871dd122f61258a80d01751d603b4d3ee14095d65453b4e846e17d7",
+  "files": [
+    {
+      "file": "DejaVuSans.ttf",
+      "sha256": "7da195a74c55bef988d0d48f9508bd5d849425c1770dba5d7bfc6ce9ed848954",
+      "bytes": 757076
+    },
+    {
+      "file": "DejaVu-LICENSE.txt",
+      "sha256": "7a083b136e64d064794c3419751e5c7dd10d2f64c108fe5ba161eae5e5958a93",
+      "bytes": 8816
+    }
+  ]
+}

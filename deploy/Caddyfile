@@ -1,0 +1,13 @@
+{$APP_HOST} {
+    encode zstd gzip
+    request_body {
+        max_size 501MB
+    }
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        X-Content-Type-Options nosniff
+        Referrer-Policy same-origin
+        -Server
+    }
+    reverse_proxy app:3000
+}

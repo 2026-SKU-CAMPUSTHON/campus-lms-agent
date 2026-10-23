@@ -1,0 +1,20 @@
+import {test,expect} from './fixtures';
+import {resolve} from 'node:path';
+const root=resolve(import.meta.dirname,'..');
+test('추가 질문 1회 뒤 교수님 승격·교수 답변·학생 확인과 대화 격리',async({page})=> {
+ await page.goto('/');await page.getByRole('button',{name:/^학생 가(?:\s|$)/}).click();await page.getByRole('button',{name:'강의 Q&A',exact:true}).click();
+ await page.getByLabel('새 질문',{exact:true}).fill('모호한 질문인데 이거가 뭔가요?');await page.getByRole('button',{name:'질문하기',exact:true}).click();
+ await expect(page.getByText('AI 추가 질문 · 1회',{exact:true})).toBeVisible();
+ await page.getByLabel('추가 질문에 답변',{exact:true}).fill('그거요. 여전히 모호해요.');await page.getByRole('button',{name:'추가 답변 보내기',exact:true}).click();
+ await expect(page.getByText('교수님께 질문을 넘겼어요.',{exact:true})).toBeVisible();
+ await expect(page.getByText('AI 추가 질문 · 1회',{exact:true})).toHaveCount(1);
+ await page.getByRole('button',{name:'로그아웃'}).click();await page.getByRole('button',{name:/^교수 체험(?:\s|$)/}).click();
+ await page.getByRole('button',{name:/모호한 질문인데 이거가 뭔가요/}).click();
+ await page.getByLabel('교수님 답변',{exact:true}).fill('정규화의 예시를 다음 수업에서 함께 살펴보겠습니다.');await page.getByRole('button',{name:'답변 등록하기',exact:true}).click();
+ await expect(page.getByText('답변이 완료된 질문이에요.',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'로그아웃'}).click();await page.getByRole('button',{name:/^학생 가(?:\s|$)/}).click();await page.getByRole('button',{name:/모호한 질문인데 이거가 뭔가요/}).click();
+ await expect(page.getByText('정규화의 예시를 다음 수업에서 함께 살펴보겠습니다.',{exact:true})).toBeVisible();
+ await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:resolve(root,'test-results/qa-student.png'),fullPage:true});
+ await page.getByRole('button',{name:'로그아웃'}).click();await page.getByRole('button',{name:/^학생 나(?:\s|$)/}).click();await expect(page.getByRole('button',{name:/모호한 질문인데 이거가 뭔가요/})).toHaveCount(0);
+ await page.setViewportSize({width:390,height:844});await expect(page.getByLabel('새 질문',{exact:true})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+});

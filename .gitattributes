@@ -1,0 +1,3 @@
+# Preserve upstream license bytes, including their original trailing spaces.
+worker/fonts/OFL.txt -whitespace
+worker/fonts/DejaVu-LICENSE.txt -whitespace

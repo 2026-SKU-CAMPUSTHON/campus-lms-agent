@@ -2,18 +2,21 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Campus LMS Agent API",
-    "version": "0.1.0-draft.1",
-    "description": "구현 전 초안. 계약 고정 작업에서 memberships 관리, Job 결과 참조, 파일 제한, pagination, 통계·재응시 정책을 보완한다. 모든 UUID는 같은 강의 소유권을 검사한다. 실제 배포 주소 없음."
+    "version": "0.11.0-mysql-auth.1",
+    "description": "Campus LMS: MySQL 기반 초대 가입·서버 세션 로그인, 강의별 권한, 퀴즈·Q&A·PDF. 배포는 HTTPS 보안 쿠키, 로컬은 개발 쿠키를 사용한다. 로그인 전 auth/config로 모드를 확인한다."
   },
   "servers": [
     {
-      "url": "http://localhost:3000/api",
-      "description": "예정된 로컬 주소, 서버 미구현"
+      "url": "/api",
+      "description": "동일 출처 API. 배포 HTTPS / 로컬 개발 http://127.0.0.1:3000/api."
     }
   ],
   "security": [
     {
-      "bearerAuth": []
+      "secureSession": []
+    },
+    {
+      "localSession": []
     }
   ],
   "paths": {
@@ -23,7 +26,7 @@
         "description": "현재 계정이 속한 강의만 조회한다.",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -45,14 +48,32 @@
               }
             }
           }
-        }
+        },
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ]
       },
       "post": {
         "operationId": "createCourse",
-        "description": "",
+        "description": "기존 강의의 교수만 새 강의와 지정 주차를 생성한다.",
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
         "responses": {
           "201": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -62,7 +83,7 @@
             }
           },
           "default": {
-            "description": "권한 오류·계약 오류·처리 오류",
+            "description": "입력·인증·권한·처리 오류. 로그인·가입은 IP당 15분 20회 제한(429).",
             "content": {
               "application/json": {
                 "schema": {
@@ -77,17 +98,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "title": {
-                    "type": "string",
-                    "minLength": 1
-                  }
-                },
-                "required": [
-                  "title"
-                ],
-                "additionalProperties": false
+                "$ref": "#/components/schemas/CreateCourseRequest"
               }
             }
           }
@@ -100,7 +111,7 @@
         "description": "",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -133,6 +144,15 @@
               "format": "uuid"
             }
           }
+        ],
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
         ]
       },
       "post": {
@@ -140,7 +160,7 @@
         "description": "해당 강의 교수 전용.",
         "responses": {
           "201": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -194,16 +214,17 @@
               }
             }
           }
-        }
+        },
+        "x-implementation-status": "planned"
       }
     },
     "/courses/{course_id}/weeks/{week_id}/materials": {
       "post": {
         "operationId": "uploadMaterial",
-        "description": "교수 전용. 원본 공개 여부와 AI 처리 허용을 구분한다. PPTX/PDF는 slide 범위를 검사한다. 구형 ppt는 초안 범위 밖이다.",
+        "description": "교수 전용. PDF/PPTX 1개, 최대20MB, 물리 페이지 번호 1부터 양 끝 포함, 최대500페이지 문서. 구형 PPT·음성·영상은 후속 구현이다. source_type=document만 허용한다. 텍스트 없는 스캔·이미지 자료는 오류다.",
         "responses": {
           "202": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -257,9 +278,7 @@
                   "source_type": {
                     "type": "string",
                     "enum": [
-                      "document",
-                      "audio",
-                      "video"
+                      "document"
                     ]
                   },
                   "original_visible_to_students": {
@@ -277,13 +296,24 @@
                 "required": [
                   "file",
                   "source_type",
-                  "original_visible_to_students"
+                  "original_visible_to_students",
+                  "slide_start",
+                  "slide_end"
                 ],
                 "additionalProperties": false
               }
             }
           }
-        }
+        },
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ]
       }
     },
     "/jobs/{job_id}": {
@@ -292,7 +322,7 @@
         "description": "해당 강의 교수만 조회한다. Worker 오류는 답변 근거 부족과 별개다.",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -322,16 +352,25 @@
               "format": "uuid"
             }
           }
+        ],
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
         ]
       }
     },
     "/courses/{course_id}/weeks/{week_id}/quiz-drafts": {
       "post": {
         "operationId": "generateQuizDraft",
-        "description": "교수 전용. 등록된 페이지 범위를 분할·배분한다. 완료 Job과 draft_id 연결은 A/C 첫 계약에서 확정한다.",
+        "description": "교수 전용. 처리 완료된 PDF/PPTX 한 개의 등록 페이지 범위 또는 완료된 YouTube 한 개의 등록 시간 구간으로 1~50문항을 최대 8개씩 배치 생성한다. 기본 Claude API, YouTube는 Claude/명시적 Codex 제공자만 지원한다. 전사 전체 근거를 입력 그룹으로 나누며 Q&A 검색 상위 일부만으로 출제하지 않는다. 서버가 근거 ID·문항 수·보기·중복을 검사하고 원본 시간 출처를 붙인다. 근거가 불명확하면 INSUFFICIENT_QUIZ_EVIDENCE로 실패하며 부분 초안을 저장하지 않는다. 완료 Job.result.draft_id로 검토 후 선택 게시한다. 같은 강의에 진행 작업이 있으면 409다.",
         "responses": {
           "202": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -393,7 +432,8 @@
                       "type": "string",
                       "format": "uuid"
                     },
-                    "minItems": 1
+                    "minItems": 1,
+                    "maxItems": 1
                   },
                   "question_count": {
                     "type": "integer",
@@ -403,14 +443,22 @@
                   }
                 },
                 "required": [
-                  "material_ids",
-                  "question_count"
+                  "material_ids"
                 ],
                 "additionalProperties": false
               }
             }
           }
-        }
+        },
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ]
       }
     },
     "/quiz-drafts/{draft_id}": {
@@ -419,7 +467,7 @@
         "description": "해당 강의 교수만 정답·해설 포함 초안을 조회한다.",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -449,16 +497,25 @@
               "format": "uuid"
             }
           }
+        ],
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
         ]
       }
     },
     "/quiz-drafts/{draft_id}/publish": {
       "post": {
         "operationId": "publishQuiz",
-        "description": "교수 전용. 선택한 문항만 게시한다.",
+        "description": "교수 전용. 선택한 문항만 게시한다. expected_version은 필수이며 현재 초안 버전과 다르면 DRAFT_VERSION_CONFLICT(409)다. 저장된 수정본 중 선택 문항만 게시하고 게시 후 초안 수정은 거부한다.",
         "responses": {
           "201": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -528,16 +585,30 @@
                     },
                     "minItems": 1,
                     "uniqueItems": true
+                  },
+                  "expected_version": {
+                    "type": "integer",
+                    "minimum": 1
                   }
                 },
                 "required": [
-                  "question_ids"
+                  "question_ids",
+                  "expected_version"
                 ],
                 "additionalProperties": false
               }
             }
           }
-        }
+        },
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ]
       }
     },
     "/quizzes/{quiz_id}": {
@@ -546,7 +617,7 @@
         "description": "해당 강의 수강생만 조회한다. 정답과 해설을 반환하지 않는다.",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -576,16 +647,25 @@
               "format": "uuid"
             }
           }
+        ],
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
         ]
       }
     },
     "/quizzes/{quiz_id}/attempts": {
       "post": {
         "operationId": "submitAttempt",
-        "description": "계정 UUID는 JWT에서 읽는다. 서버가 채점하고 현재 학생의 결과만 반환한다.",
+        "description": "강의 학생 전용. 세션 사용자로 서버 채점한다. 게시된 모든 문항에 유효한 보기를 하나씩 제출해야 한다. 학생당 퀴즈 1회 제출. 같은 Idempotency-Key/내용은 기존 결과, 키 재사용/내용 변경 및 새로운 키로 재응시는 409다.",
         "responses": {
           "201": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -634,7 +714,16 @@
               }
             }
           }
-        }
+        },
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ]
       }
     },
     "/me/attempts": {
@@ -643,7 +732,7 @@
         "description": "본인 제출 결과만 조회한다.",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -665,16 +754,25 @@
               }
             }
           }
-        }
+        },
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ]
       }
     },
     "/courses/{course_id}/weeks/{week_id}/threads": {
       "post": {
         "operationId": "createThread",
-        "description": "로그인 학생의 질문 스레드를 만들고 처리를 큐에 넣는다. GET으로 결과를 조회한다.",
+        "description": "강의 학생 전용. 질문을 저장하고 비동기 처리한다. GET으로 상태를 조회한다. Jev 연결/호출 실패는 state=open, processing_status=failed로 남기며 교수 승격으로 오인하지 않는다. 전체 진행 Q&A가 3개 이상이면 429다.",
         "responses": {
           "201": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -732,13 +830,81 @@
                 "properties": {
                   "text": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "maxLength": 4000
                   }
                 },
                 "required": [
                   "text"
                 ],
                 "additionalProperties": false
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "listThreads",
+        "description": "선택 주차의 최신 100개. 학생은 본인 질문만, 교수는 해당 강의 학생 질문을 조회한다. 내부 판단 로그·원문 검색 청크는 포함하지 않는다.",
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "week_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Thread"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           }
@@ -751,7 +917,7 @@
         "description": "질문 소유자 또는 해당 강의 교수만 조회한다.",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -781,16 +947,25 @@
               "format": "uuid"
             }
           }
+        ],
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
         ]
       }
     },
     "/threads/{thread_id}/messages": {
       "post": {
         "operationId": "replyToThread",
-        "description": "작성자 역할은 서버가 결정한다. awaiting_student의 학생 보완 답변은 재검색·재판단한다. awaiting_professor의 교수 답변은 resolved로 전환한다. 상태·버전 충돌은 409, 잘못된 상태 제출은 422다. 명확하지만 근거 부족이면 교수에게 승격한다. 추가 질문 최대 1회는 트랜잭션으로 보장한다.",
+        "description": "학생은 awaiting_student에서 보완 답변 1개를 보낼 수 있다. 교수는 awaiting_professor에서 답변해 resolved로 전환한다. 재검색·재판단 후에도 미해결이면 승격하며 추가 질문 총횟수는 1을 넘지 않는다. expected_version 불일치·진행 중은 409, 상태 불일치는 422다. 작성자 역할은 서버가 확인한다. 같은 키·본문은 이전 응답을 반환한다.",
         "responses": {
           "202": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -805,6 +980,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "교수 답변 완료",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Thread"
                 }
               }
             }
@@ -839,26 +1024,41 @@
                 "properties": {
                   "text": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "maxLength": 4000
+                  },
+                  "expected_version": {
+                    "type": "integer",
+                    "minimum": 1
                   }
                 },
                 "required": [
-                  "text"
+                  "text",
+                  "expected_version"
                 ],
                 "additionalProperties": false
               }
             }
           }
-        }
+        },
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ]
       }
     },
     "/courses/{course_id}/reports/quizzes": {
       "get": {
         "operationId": "getQuizReport",
-        "description": "교수 전용. 선택 주차 또는 전체 주차. 대상자/재응시 정의는 draft-1에서 미확정이며 첫 계약에서 결정한다. 분모 0이면 비율 null.",
+        "description": "교수 전용. week_ids 생략 시 전체 주차, 지정 시 같은 강의의 선택 주차만 반환한다. UUID 중복은 제거하고 빈 선택·형식 오류는 422, 다른 강의 주차는 404다. 현재 수강 학생만 분모와 제출 집계에 포함한다. 참여자는 선택 주차의 게시 퀴즈를 하나 이상 제출한 고유 학생 수이며 퀴즈당 학생 1회 제출이다. 전체 정답률은 정답 수/제출 답안 수를 합산한다. 게시 퀴즈 없음·분모 0은 비율 null, 미제출 답안은 오답으로 세지 않는다.",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -899,9 +1099,20 @@
               "items": {
                 "type": "string",
                 "format": "uuid"
-              }
+              },
+              "minItems": 1,
+              "maxItems": 100
             },
             "description": "쉼표로 구분한 주차 UUID. 생략하면 전체 주차."
+          }
+        ],
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
           }
         ]
       }
@@ -909,31 +1120,14 @@
     "/courses/{course_id}/reports/qa": {
       "get": {
         "operationId": "getQAReport",
-        "description": "교수 전용. 선택 주차별 질의 내역. 여러 주차 선택은 week_ids로 지정한다.",
+        "description": "교수 전용. week_ids 생략 시 전체 주차, 지정 시 같은 강의의 선택 주차만 반환한다. UUID 중복은 제거하고 빈 선택·형식 오류는 422, 다른 강의 주차는 404다. 선택 주차 전체의 현재 상태를 집계하며 대화만 페이지로 나눈다. 수강생 탈퇴 여부와 관계없이 저장된 질문 이력을 포함한다. error_count는 상태 집계와 중복될 수 있다. 내부 판단·학생 UUID는 대화 응답에 포함하지 않는다.",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "성공",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "course_id": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "threads": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Thread"
-                      }
-                    }
-                  },
-                  "required": [
-                    "course_id",
-                    "threads"
-                  ],
-                  "additionalProperties": false
+                  "$ref": "#/components/schemas/QAReport"
                 }
               }
             }
@@ -970,9 +1164,1526 @@
               "items": {
                 "type": "string",
                 "format": "uuid"
-              }
+              },
+              "minItems": 1,
+              "maxItems": 100
             },
             "description": "쉼표로 구분한 주차 UUID. 생략하면 전체 주차."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000,
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          }
+        ],
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health",
+        "x-implementation-status": "implemented",
+        "description": "",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/accounts": {
+      "get": {
+        "operationId": "listDemoAccounts",
+        "x-implementation-status": "implemented",
+        "description": "명시적 로컬 체험 모드에서만 제공. 실제 계정/배포는 404.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/login": {
+      "post": {
+        "operationId": "demoLogin",
+        "x-implementation-status": "implemented",
+        "description": "ENABLE_DEMO_AUTH=true인 로컬 개발에서만 발급한다. 실제 계정/배포에서는 해당 경로를 404 처리한다.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "user_id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "operationId": "getMe",
+        "x-implementation-status": "implemented",
+        "description": "",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logout": {
+      "post": {
+        "operationId": "logout",
+        "x-implementation-status": "implemented",
+        "description": "",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "세션 제거"
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courses/{course_id}/weeks/{week_id}/content": {
+      "get": {
+        "operationId": "getWeekContent",
+        "x-implementation-status": "implemented",
+        "description": "교수는 전체 자료·초안·게시 요약, 학생은 공개 자료·게시 요약만 받는다. 응답의 drafts는 학생에게 빈 배열이다.",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeekContent"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "week_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/materials/{material_id}/original": {
+      "get": {
+        "operationId": "getOriginal",
+        "x-implementation-status": "implemented",
+        "description": "교수 또는 원본 공개를 허용한 자료의 수강생만 다운로드한다.",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "302": {
+            "description": "YouTube 원본. 강의/공개 권한 검사 후 정규 원본 URL과 절대 시작 시간으로 이동한다. 앱은 YouTube 공개 상태 자체를 변경하지 않는다.",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "description": "https://www.youtube.com/watch?v=<id>&t=<seconds>s"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "material_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/threads/{thread_id}/retry": {
+      "post": {
+        "operationId": "retryQA",
+        "description": "연결·생성 실패 상태에서 명시적으로 재시도한다. 오류를 추가 질문이나 교수 승격으로 바꾸지 않는다. 기존 추가 질문 횟수와 대화를 보존한다. 자동 재시도는 없다.",
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Thread"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expected_version": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "expected_version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/threads/{thread_id}/decisions": {
+      "get": {
+        "operationId": "getQADecisions",
+        "description": "해당 강의 교수 전용. Jev 버전·두 판단·확률·참조 근거 ID·서버 선택 경로를 반환한다.",
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DecisionRecord"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courses/{course_id}/weeks/{week_id}/media": {
+      "post": {
+        "operationId": "uploadLectureMedia",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "x-implementation-status": "implemented",
+        "description": "교수 전용. 500MB 이하 녹음·동영상 한 개를 디스크에 저장하고 로컬 전사를 자동 접수한다. 지원 형식 MP3/M4A/WAV/OGG/FLAC, MP4/MOV/WebM/MKV. 최대 120분, 전사는 한 번에 한 파일이며 대기 포함 3개까지다. 모델 준비·파일 오류는 Job 및 자료 error에 기록한다.",
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "week_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "source_type": {
+                    "type": "string",
+                    "enum": [
+                      "audio",
+                      "video"
+                    ]
+                  },
+                  "original_visible_to_students": {
+                    "type": "string",
+                    "enum": [
+                      "true",
+                      "false"
+                    ]
+                  }
+                },
+                "required": [
+                  "file",
+                  "source_type",
+                  "original_visible_to_students"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "자동 전사 접수",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialReceipt"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "권한·입력·파일·작업 오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/materials/{material_id}/transcript": {
+      "get": {
+        "operationId": "getLectureTranscript",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "x-implementation-status": "implemented",
+        "description": "같은 강의의 교수 또는 원본 공개 자료의 수강자만 전체 전사를 조회한다. 비공개 원본의 학생 접근은 403이다. 전사 시간은 초 단위이며 문서 페이지와 혼용하지 않는다.",
+        "parameters": [
+          {
+            "name": "material_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "전사와 작업 상태",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transcript"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "권한·입력·파일·작업 오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/materials/{material_id}/playback": {
+      "get": {
+        "operationId": "playLectureMedia",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "x-implementation-status": "implemented",
+        "description": "완료된 미디어 원본을 재생하며 HTTP Range를 지원한다. 같은 강의 교수 또는 원본 공개 자료의 수강자만 접근한다. 비공개 자료도 허용된 Q&A 검색은 가능하지만 학생 원본 재생 권한을 부여하지 않는다. YouTube 자료는 Range 파일 응답 대신 302로 원본 시각으로 이동한다. start 쿼리는 선택 구간 안에서만 허용하며 기본은 등록한 시작 시간이다.",
+        "parameters": [
+          {
+            "name": "material_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0
+            },
+            "description": "YouTube 전용 절대 시작 초. 선택한 start/end 범위 내여야 한다."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "원본 미디어"
+          },
+          "206": {
+            "description": "범위 미디어 응답"
+          },
+          "default": {
+            "description": "권한·입력·파일·작업 오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "302": {
+            "description": "YouTube 원본. 강의/공개 권한 검사 후 정규 원본 URL과 절대 시작 시간으로 이동한다. 앱은 YouTube 공개 상태 자체를 변경하지 않는다.",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "description": "https://www.youtube.com/watch?v=<id>&t=<seconds>s"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/materials/{material_id}/transcription-retry": {
+      "post": {
+        "operationId": "retryLectureTranscription",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "x-implementation-status": "implemented",
+        "description": "교수 전용. 재시도 가능한 실패 전사만 새 Job으로 접수한다. 원본 파일을 보존하며 처리 중·완료 상태의 중복 재시도는 409다. 자동 재시도나 제공자 대체는 하지 않는다.",
+        "parameters": [
+          {
+            "name": "material_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "자동 전사 접수",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialReceipt"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "권한·입력·파일·작업 오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courses/{course_id}/weeks/{week_id}/youtube": {
+      "post": {
+        "operationId": "importYouTube",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "x-implementation-status": "implemented",
+        "description": "교수만 공개 YouTube 영상의 선택 시간 구간을 등록한다. 비동기 Job 접수 후 한국어/영어 자막 우선, 가져올 수 있는 자막이 없으면 최대 500MB 음성 다운로드·로컬 ASR을 시도한다. 원본 시각을 유지하며 같은 강의/주차 Q&A에 사용한다. 로그인·연령·비공개/라이브 제한은 우회하지 않으며 실패/재시도 상태로 남긴다. 로컬 미디어와 직렬 처리·대기 포함 3개를 공유한다.",
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "week_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/YouTubeImportRequest"
+              },
+              "example": {
+                "url": "https://www.youtube.com/watch?v=XwsPTAnFRsk&t=732s",
+                "end_sec": 852,
+                "original_visible_to_students": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "자동 전사 접수",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialReceipt"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "권한·입력·파일·작업 오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/quiz-drafts/{draft_id}/questions/{question_id}": {
+      "patch": {
+        "operationId": "editDraftQuestion",
+        "description": "교수 전용. 해당 강의의 미게시 초안만 수정한다. expected_version이 현재 초안 버전과 같아야 하고 성공 시 버전을 1 증가시킨 전체 QuizDraft를 반환한다. 소스/ID/문항 추가/삭제/순서 변경은 허용하지 않는다. ALREADY_PUBLISHED·DRAFT_VERSION_CONFLICT는 409, INVALID_OPTIONS·DUPLICATE_OPTIONS와 입력 오류는 422다. 같은 키·같은 내용 재전송은 최초 응답을 반환하고 중복 저장하지 않는다. 모델을 호출하지 않는다.",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "question_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditDraftQuestionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "수정 내용을 저장한 전체 초안",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizDraft"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "권한 오류·계약 오류·처리 오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented"
+      }
+    },
+    "/courses/{course_id}/reports/pdf": {
+      "get": {
+        "operationId": "downloadProfessorReportPDF",
+        "tags": [
+          "Reports"
+        ],
+        "description": "교수 전용. week_ids 생략은 전체 주차, 지정 시 선택 주차의 퀴즈 요약/주차별/문항별 정답·풀이·출처와 Q&A 전체 대화를 하나의 PDF로 다운로드한다. Q&A 화면 페이지와 무관하다. 동일 DB 스냅샷으로 기존 SQL 집계를 사용하며 모델을 호출하지 않는다. 한글 글꼴 포함, 생성 시각 KST, no-store, Content-Disposition attachment. 최대 문항 2000개·Q&A 1000개·입력 16MiB·PDF 32MiB·생성 30초, 앱당 동시 2개이며 초과는 명시적 오류다. 학생/다른 강의 교수는 접근 불가. 내부 판단·학생 UUID·API 설정은 제외한다.",
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "week_ids",
+            "in": "query",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "minItems": 1,
+              "maxItems": 100
+            },
+            "description": "쉼표로 구분한 주차 UUID. 생략하면 전체 주차."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "선택 주차 수업 레포트 PDF. 한글/ASCII 다운로드 파일명.",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "attachment; filename 및 UTF-8 filename*"
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "로그인 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "교수 권한 또는 강의 소속 없음",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "다른 강의/없는 주차",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "잘못된 선택 또는 레포트 크기 초과",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "동시 PDF 생성 중",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "PDF 환경 미설치 또는 생성 실패/시간 초과",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courses/{course_id}/reports/wrong-answers": {
+      "get": {
+        "operationId": "getMyWrongAnswersReport",
+        "description": "학생 전용. 세션의 본인과 강의 membership으로 저장된 제출 결과만 조회한다. week_ids 생략은 전체 주차이며 선택/전체 요약과 본인의 오답·선택 답·정답·풀이·페이지/시간 출처를 제공한다. 타인 UUID/attempt_id/quiz_id 입력은 받지 않는다. 미응시·모두 정답을 구분하며 미제출/맞힌 문항의 정답·다른 학생·Q&A·교수 통계는 제외한다. 원본 비공개는 유지하고 모델을 호출하지 않는다. 제출 1000건 또는 오답 2000개 초과는 422다. 정답률은 본인의 정답 수/풀이 수이며 분모 0은 null이다. 쿼리의 임의 필드는 422다.",
+        "responses": {
+          "200": {
+            "description": "본인의 선택 주차 오답 레포트",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentWrongReport"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "권한 오류·계약 오류·처리 오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "로그인 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "학생 권한/강의 소속 없음. 교수도 접근 불가.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "다른 강의/없는 주차",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "잘못된 선택 또는 레포트 크기 초과",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "week_ids",
+            "in": "query",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "minItems": 1,
+              "maxItems": 100
+            },
+            "description": "쉼표로 구분한 주차 UUID. 생략하면 전체 주차."
+          }
+        ],
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ]
+      }
+    },
+    "/courses/{course_id}/reports/wrong-answers/pdf": {
+      "get": {
+        "operationId": "downloadMyWrongAnswersPDF",
+        "tags": [
+          "Reports"
+        ],
+        "description": "학생 전용. 세션의 본인과 강의 membership으로 저장된 제출 결과만 조회한다. week_ids 생략은 전체 주차이며 선택/전체 요약과 본인의 오답·선택 답·정답·풀이·페이지/시간 출처를 제공한다. 타인 UUID/attempt_id/quiz_id 입력은 받지 않는다. 미응시·모두 정답을 구분하며 미제출/맞힌 문항의 정답·다른 학생·Q&A·교수 통계는 제외한다. 원본 비공개는 유지하고 모델을 호출하지 않는다. 제출 1000건 또는 오답 2000개 초과는 422다. PDF는 기존 한글/수학 글꼴·16MiB 입력·32MiB 출력·30초·공유 동시 2개 제한을 재사용한다. no-store attachment.",
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "week_ids",
+            "in": "query",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "minItems": 1,
+              "maxItems": 100
+            },
+            "description": "쉼표로 구분한 주차 UUID. 생략하면 전체 주차."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "선택 주차 수업 레포트 PDF. 한글/ASCII 다운로드 파일명.",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "attachment; filename 및 UTF-8 filename*"
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "로그인 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "학생 권한/강의 소속 없음. 교수도 접근 불가.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "다른 강의/없는 주차",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "잘못된 선택 또는 레포트 크기 초과",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "동시 PDF 생성 중",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "PDF 환경 미설치 또는 생성 실패/시간 초과",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/config": {
+      "get": {
+        "operationId": "authenticationConfig",
+        "description": "로그인 모드·초대 가입·비밀번호 최소 길이. 공개 엔드포인트.",
+        "x-implementation-status": "implemented",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthConfig"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "입력·인증·권한·처리 오류. 로그인·가입은 IP당 15분 20회 제한(429).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "passwordLogin",
+        "description": "이메일·비밀번호를 검증하고 8시간 서버 세션 쿠키를 새로 발급한다. 잘못된 이메일·비밀번호는 동일한 401 응답이다.",
+        "x-implementation-status": "implemented",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "입력·인증·권한·처리 오류. 로그인·가입은 IP당 15분 20회 제한(429).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "operationId": "registerWithInvite",
+        "description": "단일 사용·7일 유효 초대 코드로 가입한다. 권한은 초대의 강의·역할로 결정하며 클라이언트 역할 입력은 거부한다. 원자적으로 계정·초대 소비·수강 관계를 저장한다.",
+        "x-implementation-status": "implemented",
+        "security": [],
+        "responses": {
+          "201": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "입력·인증·권한·처리 오류. 로그인·가입은 IP당 15분 20회 제한(429).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courses/join": {
+      "post": {
+        "operationId": "joinCourse",
+        "description": "로그인한 사용자가 초대 코드로 다른 강의에 참여한다. 기존 역할 변경은 허용하지 않는다.",
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Course"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "입력·인증·권한·처리 오류. 로그인·가입은 IP당 15분 20회 제한(429).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinCourseRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courses/{course_id}/invites": {
+      "post": {
+        "operationId": "createCourseInvite",
+        "description": "해당 강의의 교수만 학생/교수 초대를 발급한다. 해시만 저장하고 원문 코드는 응답 1회만 제공한다.",
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteReceipt"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "입력·인증·권한·처리 오류. 로그인·가입은 IP당 15분 20회 제한(429).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/courses/{course_id}/members": {
+      "get": {
+        "operationId": "listCourseMembers",
+        "description": "해당 강의의 교수만 참여자의 이름·역할을 조회한다. 비밀번호·토큰·이메일을 포함하지 않는다.",
+        "x-implementation-status": "implemented",
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CourseMember"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "입력·인증·권한·처리 오류. 로그인·가입은 IP당 15분 20회 제한(429).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ]
       }
@@ -980,10 +2691,17 @@
   },
   "components": {
     "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT"
+      "localSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "campus_session",
+        "description": "개발 모드의 HttpOnly SameSite=Strict 서버 세션. 체험 로그인은 명시적 로컬 모드에서만 활성화한다."
+      },
+      "secureSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-campus_session",
+        "description": "배포용 Secure·HttpOnly·SameSite=Strict·Path=/ 서버 세션. 토큰 해시와 만료 시간을 MySQL에 저장한다. JWT 인증은 사용하지 않는다."
       }
     },
     "schemas": {
@@ -1060,48 +2778,14 @@
         "additionalProperties": false
       },
       "Source": {
-        "type": "object",
-        "properties": {
-          "material_id": {
-            "type": "string",
-            "format": "uuid"
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/DocumentSource"
           },
-          "chunk_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "source_type": {
-            "type": "string",
-            "enum": [
-              "document",
-              "transcript"
-            ]
-          },
-          "slide_no": {
-            "type": "integer",
-            "minimum": 1,
-            "nullable": true
-          },
-          "start_sec": {
-            "type": "number",
-            "minimum": 0,
-            "nullable": true
-          },
-          "end_sec": {
-            "type": "number",
-            "minimum": 0,
-            "nullable": true
+          {
+            "$ref": "#/components/schemas/TranscriptSource"
           }
-        },
-        "required": [
-          "material_id",
-          "chunk_id",
-          "source_type",
-          "slide_no",
-          "start_sec",
-          "end_sec"
-        ],
-        "additionalProperties": false
+        ]
       },
       "Job": {
         "type": "object",
@@ -1120,18 +2804,29 @@
             ]
           },
           "error": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Error"
+            "$ref": "#/components/schemas/NullableError"
+          },
+          "result": {
+            "type": "object",
+            "properties": {
+              "material_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "draft_id": {
+                "type": "string",
+                "format": "uuid"
               }
-            ],
+            },
+            "additionalProperties": false,
             "nullable": true
           }
         },
         "required": [
           "job_id",
           "status",
-          "error"
+          "error",
+          "result"
         ],
         "additionalProperties": false
       },
@@ -1281,12 +2976,18 @@
             "items": {
               "$ref": "#/components/schemas/DraftQuestion"
             }
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "초안 전체 버전. 기존 저장 자료는 누락 시 1로 읽으며 문항 저장마다 증가한다."
           }
         },
         "required": [
           "draft_id",
           "week_id",
-          "questions"
+          "questions",
+          "version"
         ],
         "additionalProperties": false
       },
@@ -1341,7 +3042,7 @@
           "wrong_questions": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DraftQuestion"
+              "$ref": "#/components/schemas/WrongQuestion"
             }
           }
         },
@@ -1386,6 +3087,10 @@
             "items": {
               "$ref": "#/components/schemas/Source"
             }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "required": [
@@ -1393,7 +3098,8 @@
           "author_role",
           "kind",
           "text",
-          "sources"
+          "sources",
+          "created_at"
         ],
         "additionalProperties": false
       },
@@ -1438,12 +3144,33 @@
             }
           },
           "error": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Error"
-              }
-            ],
-            "nullable": true
+            "$ref": "#/components/schemas/NullableError"
+          },
+          "student_name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "handoff_reason": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "unclear_after_clarification",
+              "insufficient_evidence",
+              "judgment_uncertain",
+              "answer_not_grounded",
+              null
+            ]
           }
         },
         "required": [
@@ -1453,7 +3180,12 @@
           "clarification_count",
           "processing_status",
           "messages",
-          "error"
+          "error",
+          "student_name",
+          "version",
+          "created_at",
+          "updated_at",
+          "handoff_reason"
         ],
         "additionalProperties": false
       },
@@ -1464,81 +3196,1627 @@
             "type": "string",
             "format": "uuid"
           },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/QuizMetrics"
+          },
           "weeks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuizWeekReport"
+            }
+          }
+        },
+        "required": [
+          "course_id",
+          "generated_at",
+          "summary",
+          "weeks"
+        ],
+        "additionalProperties": false
+      },
+      "NullableError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "retryable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable"
+        ],
+        "additionalProperties": false,
+        "nullable": true
+      },
+      "WrongQuestion": {
+        "type": "object",
+        "properties": {
+          "question_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            }
+          },
+          "correct_option_id": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            }
+          },
+          "selected_option_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "question_id",
+          "prompt",
+          "options",
+          "correct_option_id",
+          "explanation",
+          "sources",
+          "selected_option_id"
+        ],
+        "additionalProperties": false
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "MaterialSummary": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/DocumentMaterialSummary"
+          },
+          {
+            "$ref": "#/components/schemas/MediaMaterialSummary"
+          }
+        ]
+      },
+      "WeekContent": {
+        "type": "object",
+        "properties": {
+          "materials": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MaterialSummary"
+            }
+          },
+          "drafts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuizDraft"
+            }
+          },
+          "quizzes": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
+                "quiz_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "draft_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
                 "week_id": {
                   "type": "string",
                   "format": "uuid"
                 },
-                "eligible_student_count": {
+                "question_count": {
                   "type": "integer",
-                  "minimum": 0
-                },
-                "participant_count": {
-                  "type": "integer",
-                  "minimum": 0
-                },
-                "participation_rate": {
-                  "type": "number",
-                  "minimum": 0,
-                  "maximum": 1,
-                  "nullable": true
-                },
-                "questions": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "question_id": {
-                        "type": "string",
-                        "format": "uuid"
-                      },
-                      "prompt": {
-                        "type": "string"
-                      },
-                      "correct_count": {
-                        "type": "integer",
-                        "minimum": 0
-                      },
-                      "answer_count": {
-                        "type": "integer",
-                        "minimum": 0
-                      },
-                      "correct_rate": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 1,
-                        "nullable": true
-                      }
-                    },
-                    "required": [
-                      "question_id",
-                      "prompt",
-                      "correct_count",
-                      "answer_count",
-                      "correct_rate"
-                    ],
-                    "additionalProperties": false
-                  }
+                  "minimum": 1
                 }
               },
               "required": [
+                "quiz_id",
+                "draft_id",
                 "week_id",
-                "eligible_student_count",
-                "participant_count",
-                "participation_rate",
-                "questions"
+                "question_count"
               ],
               "additionalProperties": false
             }
           }
         },
         "required": [
+          "materials",
+          "drafts",
+          "quizzes"
+        ],
+        "additionalProperties": false
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "local-development",
+              "production"
+            ]
+          },
+          "ai_configured": {
+            "type": "boolean"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "claude",
+              "codex",
+              "openai",
+              "gemini"
+            ]
+          },
+          "model": {
+            "type": "string"
+          },
+          "contract_version": {
+            "type": "string"
+          },
+          "qa_configured": {
+            "type": "boolean"
+          },
+          "jev_configured": {
+            "type": "boolean"
+          },
+          "jev_model": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "mode",
+          "ai_configured",
+          "provider",
+          "model",
+          "contract_version",
+          "qa_configured",
+          "jev_configured",
+          "jev_model"
+        ],
+        "additionalProperties": false
+      },
+      "Judgment": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string"
+          },
+          "clarity": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "enum": [
+                  "clear",
+                  "unclear"
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "probabilities": {
+                "type": "object",
+                "properties": {
+                  "clear": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "unclear": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "required": [
+                  "clear",
+                  "unclear"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "label",
+              "confidence",
+              "probabilities"
+            ],
+            "additionalProperties": false
+          },
+          "evidence": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "enum": [
+                  "sufficient",
+                  "insufficient"
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "probabilities": {
+                "type": "object",
+                "properties": {
+                  "sufficient": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "insufficient": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "required": [
+                  "sufficient",
+                  "insufficient"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "label",
+              "confidence",
+              "probabilities"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "model",
+          "clarity",
+          "evidence"
+        ],
+        "additionalProperties": false
+      },
+      "DecisionRecord": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "decision": {
+            "$ref": "#/components/schemas/Judgment"
+          },
+          "source_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "route": {
+            "type": "string",
+            "enum": [
+              "answer",
+              "clarify",
+              "handoff"
+            ]
+          }
+        },
+        "required": [
+          "at",
+          "attempt",
+          "decision",
+          "source_ids",
+          "route"
+        ],
+        "additionalProperties": false
+      },
+      "QuizMetrics": {
+        "type": "object",
+        "properties": {
+          "eligible_student_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "participant_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quiz_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "question_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "submission_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "answer_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "participation_rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "nullable": true
+          },
+          "correct_rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "nullable": true
+          }
+        },
+        "required": [
+          "eligible_student_count",
+          "participant_count",
+          "quiz_count",
+          "question_count",
+          "submission_count",
+          "correct_count",
+          "answer_count",
+          "participation_rate",
+          "correct_rate"
+        ],
+        "additionalProperties": false
+      },
+      "ReportQuestion": {
+        "type": "object",
+        "properties": {
+          "question_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            }
+          },
+          "correct_option_id": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            }
+          },
+          "quiz_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quiz_no": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "question_no": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "correct_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "answer_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct_rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "nullable": true
+          }
+        },
+        "required": [
+          "question_id",
+          "prompt",
+          "options",
+          "correct_option_id",
+          "explanation",
+          "sources",
+          "quiz_id",
+          "quiz_no",
+          "question_no",
+          "correct_count",
+          "answer_count",
+          "correct_rate"
+        ],
+        "additionalProperties": false
+      },
+      "QuizWeekReport": {
+        "type": "object",
+        "properties": {
+          "week_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "course_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "week_no": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "eligible_student_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "participant_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quiz_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "question_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "submission_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "answer_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "participation_rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "nullable": true
+          },
+          "correct_rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "nullable": true
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportQuestion"
+            }
+          }
+        },
+        "required": [
+          "week_id",
           "course_id",
+          "week_no",
+          "title",
+          "eligible_student_count",
+          "participant_count",
+          "quiz_count",
+          "question_count",
+          "submission_count",
+          "correct_count",
+          "answer_count",
+          "participation_rate",
+          "correct_rate",
+          "questions"
+        ],
+        "additionalProperties": false
+      },
+      "QAMetrics": {
+        "type": "object",
+        "properties": {
+          "thread_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "questioning_student_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "open_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "awaiting_student_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "awaiting_professor_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "resolved_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "error_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "clarified_thread_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "thread_count",
+          "questioning_student_count",
+          "open_count",
+          "awaiting_student_count",
+          "awaiting_professor_count",
+          "resolved_count",
+          "error_count",
+          "clarified_thread_count"
+        ],
+        "additionalProperties": false
+      },
+      "QAWeekReport": {
+        "type": "object",
+        "properties": {
+          "week_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "course_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "week_no": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "thread_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "questioning_student_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "open_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "awaiting_student_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "awaiting_professor_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "resolved_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "error_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "clarified_thread_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "week_id",
+          "course_id",
+          "week_no",
+          "title",
+          "thread_count",
+          "questioning_student_count",
+          "open_count",
+          "awaiting_student_count",
+          "awaiting_professor_count",
+          "resolved_count",
+          "error_count",
+          "clarified_thread_count"
+        ],
+        "additionalProperties": false
+      },
+      "QAReport": {
+        "type": "object",
+        "properties": {
+          "course_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/QAMetrics"
+          },
+          "weeks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QAWeekReport"
+            }
+          },
+          "threads": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Thread"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "page_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "page_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "course_id",
+          "generated_at",
+          "summary",
+          "weeks",
+          "threads",
+          "page",
+          "page_size",
+          "total_count",
+          "page_count"
+        ],
+        "additionalProperties": false
+      },
+      "DocumentSource": {
+        "type": "object",
+        "properties": {
+          "material_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "chunk_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "source_type": {
+            "type": "string",
+            "enum": [
+              "document"
+            ]
+          },
+          "slide_no": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "start_sec": {
+            "type": "number",
+            "nullable": true,
+            "enum": [
+              null
+            ]
+          },
+          "end_sec": {
+            "type": "number",
+            "nullable": true,
+            "enum": [
+              null
+            ]
+          },
+          "material_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "material_id",
+          "chunk_id",
+          "source_type",
+          "slide_no",
+          "start_sec",
+          "end_sec"
+        ],
+        "additionalProperties": false
+      },
+      "TranscriptSource": {
+        "type": "object",
+        "properties": {
+          "material_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "chunk_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "source_type": {
+            "type": "string",
+            "enum": [
+              "transcript"
+            ]
+          },
+          "slide_no": {
+            "type": "integer",
+            "nullable": true,
+            "enum": [
+              null
+            ]
+          },
+          "start_sec": {
+            "type": "number",
+            "minimum": 0
+          },
+          "end_sec": {
+            "type": "number",
+            "minimum": 0
+          },
+          "material_name": {
+            "type": "string"
+          },
+          "media_type": {
+            "type": "string",
+            "enum": [
+              "audio",
+              "video"
+            ]
+          },
+          "original_visible_to_students": {
+            "type": "boolean"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "youtube"
+            ],
+            "description": "YouTube 출처는 앱의 권한 검사된 playback으로 이동한다. 학생 비공개 응답에는 영상 ID/URL을 넣지 않는다."
+          }
+        },
+        "required": [
+          "material_id",
+          "chunk_id",
+          "source_type",
+          "slide_no",
+          "start_sec",
+          "end_sec",
+          "material_name",
+          "media_type",
+          "original_visible_to_students"
+        ],
+        "additionalProperties": false
+      },
+      "TranscriptSegment": {
+        "type": "object",
+        "properties": {
+          "start_sec": {
+            "type": "number",
+            "minimum": 0
+          },
+          "end_sec": {
+            "type": "number",
+            "minimum": 0
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 6000
+          }
+        },
+        "required": [
+          "start_sec",
+          "end_sec",
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "DocumentMaterialSummary": {
+        "type": "object",
+        "properties": {
+          "material_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "course_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "week_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slide_start": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "slide_end": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "original_visible_to_students": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "processing",
+              "completed",
+              "failed"
+            ]
+          },
+          "total_slides": {
+            "type": "integer",
+            "minimum": 1,
+            "nullable": true
+          },
+          "source_type": {
+            "type": "string",
+            "enum": [
+              "document"
+            ]
+          }
+        },
+        "required": [
+          "material_id",
+          "course_id",
+          "week_id",
+          "name",
+          "slide_start",
+          "slide_end",
+          "original_visible_to_students",
+          "status",
+          "total_slides",
+          "source_type"
+        ],
+        "additionalProperties": false
+      },
+      "MediaMaterialSummary": {
+        "type": "object",
+        "properties": {
+          "material_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "course_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "week_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slide_start": {
+            "type": "integer",
+            "nullable": true,
+            "enum": [
+              null
+            ]
+          },
+          "slide_end": {
+            "type": "integer",
+            "nullable": true,
+            "enum": [
+              null
+            ]
+          },
+          "original_visible_to_students": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "processing",
+              "completed",
+              "failed"
+            ]
+          },
+          "total_slides": {
+            "type": "integer",
+            "nullable": true,
+            "enum": [
+              null
+            ]
+          },
+          "source_type": {
+            "type": "string",
+            "enum": [
+              "audio",
+              "video"
+            ]
+          },
+          "duration_sec": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 7200.1,
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "error": {
+            "$ref": "#/components/schemas/NullableError"
+          },
+          "youtube": {
+            "$ref": "#/components/schemas/YouTubeOrigin"
+          }
+        },
+        "required": [
+          "material_id",
+          "course_id",
+          "week_id",
+          "name",
+          "slide_start",
+          "slide_end",
+          "original_visible_to_students",
+          "status",
+          "total_slides",
+          "source_type",
+          "duration_sec",
+          "language",
+          "job_id",
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "Transcript": {
+        "type": "object",
+        "properties": {
+          "material_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "processing",
+              "completed",
+              "failed"
+            ]
+          },
+          "duration_sec": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 7200.1,
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "segments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TranscriptSegment"
+            }
+          },
+          "error": {
+            "$ref": "#/components/schemas/NullableError"
+          }
+        },
+        "required": [
+          "material_id",
+          "status",
+          "duration_sec",
+          "language",
+          "segments",
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "YouTubeOrigin": {
+        "type": "object",
+        "properties": {
+          "video_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{11}$"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://www\\.youtube\\.com/watch\\?v=[A-Za-z0-9_-]{11}$"
+          },
+          "start_sec": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 7199
+          },
+          "end_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7200,
+            "nullable": true
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "captions",
+              "audio",
+              null
+            ],
+            "nullable": true
+          },
+          "is_generated": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "required": [
+          "video_id",
+          "url",
+          "start_sec",
+          "end_sec",
+          "method",
+          "is_generated"
+        ],
+        "additionalProperties": false,
+        "description": "video 자료의 YouTube 원본. end_sec=null은 영상 끝. method=null은 대기/실패 중일 수 있다. is_generated는 자막 자동 생성 여부이며 음성 전사는 null이다. duration_sec는 원본 전체 길이다."
+      },
+      "YouTubeImportRequest": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "format": "uri"
+          },
+          "start_sec": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 7199
+          },
+          "end_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7200,
+            "nullable": true
+          },
+          "original_visible_to_students": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "url",
+          "original_visible_to_students"
+        ],
+        "additionalProperties": false,
+        "description": "HTTPS youtube.com/watch, shorts/embed, youtu.be 단일 영상만 지원한다. ID/호스트/자격 정보/포트/시간을 서버에서 엄격 검사한다. start_sec 생략 시 링크의 t/start를 사용하며 추적/재생목록 인자는 폐기한다. end_sec 생략/null은 영상 끝. end는 start보다 커야 하며 영상 길이를 넘을 수 없다. 전체 영상 120분 이하만 지원한다."
+      },
+      "EditDraftQuestionRequest": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "options": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "object",
+              "properties": {
+                "option_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              },
+              "required": [
+                "option_id",
+                "text"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "correct_option_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "expected_version",
+          "prompt",
+          "options",
+          "correct_option_id",
+          "explanation"
+        ],
+        "additionalProperties": false,
+        "description": "교수의 미게시 초안 문항 전체 수정. 문자열 앞뒤 공백을 제거한다. 기존 보기 ID 네 개를 중복 없이 모두 보내고 그중 하나를 정답으로 선택한다. 보기 정규화 문자열 중복을 거부한다. 질문/보기 ID·순서·출처는 유지한다."
+      },
+      "StudentWrongMetrics": {
+        "type": "object",
+        "properties": {
+          "submission_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wrong_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct_rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "nullable": true
+          }
+        },
+        "required": [
+          "submission_count",
+          "total_count",
+          "correct_count",
+          "wrong_count",
+          "correct_rate"
+        ],
+        "additionalProperties": false
+      },
+      "StudentWrongQuestion": {
+        "type": "object",
+        "properties": {
+          "question_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            }
+          },
+          "correct_option_id": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            }
+          },
+          "selected_option_id": {
+            "type": "string"
+          },
+          "question_no": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "question_id",
+          "prompt",
+          "options",
+          "correct_option_id",
+          "explanation",
+          "sources",
+          "selected_option_id",
+          "question_no"
+        ],
+        "additionalProperties": false
+      },
+      "StudentWrongAttempt": {
+        "type": "object",
+        "properties": {
+          "attempt_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quiz_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quiz_no": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "total_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "correct_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wrong_questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentWrongQuestion"
+            }
+          }
+        },
+        "required": [
+          "attempt_id",
+          "quiz_id",
+          "quiz_no",
+          "total_count",
+          "correct_count",
+          "wrong_questions"
+        ],
+        "additionalProperties": false
+      },
+      "StudentWrongWeek": {
+        "type": "object",
+        "properties": {
+          "week_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "week_no": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "submission_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wrong_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct_rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "nullable": true
+          },
+          "attempts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentWrongAttempt"
+            }
+          }
+        },
+        "required": [
+          "week_id",
+          "week_no",
+          "title",
+          "submission_count",
+          "total_count",
+          "correct_count",
+          "wrong_count",
+          "correct_rate",
+          "attempts"
+        ],
+        "additionalProperties": false
+      },
+      "StudentWrongReport": {
+        "type": "object",
+        "properties": {
+          "course_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "student_name": {
+            "type": "string"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/StudentWrongMetrics"
+          },
+          "weeks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentWrongWeek"
+            }
+          }
+        },
+        "required": [
+          "course_id",
+          "generated_at",
+          "student_name",
+          "summary",
           "weeks"
+        ],
+        "additionalProperties": false
+      },
+      "AuthConfig": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "demo",
+              "password"
+            ]
+          },
+          "registration": {
+            "type": "string",
+            "enum": [
+              "invite"
+            ]
+          },
+          "password_min_length": {
+            "type": "integer",
+            "enum": [
+              12
+            ]
+          }
+        },
+        "required": [
+          "mode",
+          "registration",
+          "password_min_length"
+        ],
+        "additionalProperties": false
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "additionalProperties": false
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          },
+          "password": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 128,
+            "writeOnly": true
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "invite_code": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{43}$"
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "name",
+          "invite_code"
+        ],
+        "additionalProperties": false
+      },
+      "InviteRequest": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "professor",
+              "student"
+            ]
+          }
+        },
+        "required": [
+          "role"
+        ],
+        "additionalProperties": false
+      },
+      "InviteReceipt": {
+        "type": "object",
+        "properties": {
+          "invite_code": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{43}$"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "professor",
+              "student"
+            ]
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "invite_code",
+          "role",
+          "expires_at"
+        ],
+        "additionalProperties": false
+      },
+      "JoinCourseRequest": {
+        "type": "object",
+        "properties": {
+          "invite_code": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{43}$"
+          }
+        },
+        "required": [
+          "invite_code"
+        ],
+        "additionalProperties": false
+      },
+      "CreateCourseRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "week_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 52,
+            "default": 15
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "additionalProperties": false
+      },
+      "CourseMember": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "professor",
+              "student"
+            ]
+          }
+        },
+        "required": [
+          "user_id",
+          "name",
+          "role"
         ],
         "additionalProperties": false
       }

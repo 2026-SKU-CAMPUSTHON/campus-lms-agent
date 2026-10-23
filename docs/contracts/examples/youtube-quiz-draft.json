@@ -1,0 +1,45 @@
+{
+  "draft_id": "50000000-0000-4000-8000-000000000100",
+  "week_id": "30000000-0000-4000-8000-000000000001",
+  "questions": [
+    {
+      "question_id": "60000000-0000-4000-8000-000000000100",
+      "prompt": "푸리에 급수는 주기 함수를 어떤 형태로 나타내나요?",
+      "options": [
+        {
+          "option_id": "a",
+          "text": "사인과 코사인의 합"
+        },
+        {
+          "option_id": "b",
+          "text": "항상 0"
+        },
+        {
+          "option_id": "c",
+          "text": "자료 복제"
+        },
+        {
+          "option_id": "d",
+          "text": "표본 삭제"
+        }
+      ],
+      "correct_option_id": "a",
+      "explanation": "합성 강의 근거는 사인과 코사인의 합으로 표현한다고 설명합니다.",
+      "sources": [
+        {
+          "material_id": "40000000-0000-4000-8000-000000000100",
+          "chunk_id": "70000000-0000-4000-8000-000000000100",
+          "source_type": "transcript",
+          "slide_no": null,
+          "start_sec": 732,
+          "end_sec": 780,
+          "material_name": "합성 YouTube 강의",
+          "media_type": "video",
+          "original_visible_to_students": false,
+          "origin": "youtube"
+        }
+      ]
+    }
+  ],
+  "version": 1
+}
