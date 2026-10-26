@@ -1,0 +1,87 @@
+{
+  "version": "1.0.0-candidate",
+  "prepared_date": "2026-10-26",
+  "timezone": "Asia/Seoul",
+  "label_status": "needs_two_human_reviews",
+  "evaluation_executed": false,
+  "code_baseline": "c701a5f9b74337ecf56457af6a424e4af2122f8d",
+  "sources": [
+    {
+      "source_id": "PDF_TEXT",
+      "filename": "ch13_텍스트 마이닝.pdf",
+      "page_count": 60,
+      "sha256": "9cc8f4b30ca254287f6107e65f1719fcce8cf432260e5a1c58c5c5c270202258",
+      "page_numbering": "physical PDF pages, 1-based",
+      "provenance": "user-provided local PDF; selected final pages text-extracted and visually inspected",
+      "distribution": "original PDF not included"
+    },
+    {
+      "source_id": "YT_MATH",
+      "title": "공학수학(2) [01강] 편미분방정식 강의소개 및 함수의 직교성질 [2021년]  (1.25~1.5배속 추천)",
+      "url": "https://www.youtube.com/watch?v=XwsPTAnFRsk",
+      "duration_sec": 2819,
+      "method": "stored Korean generated captions",
+      "snapshot_origin": "existing local material, imported in prior feature tests",
+      "snapshot_extraction_date": "2026-10-26",
+      "segment_count": 601,
+      "segments_sha256": "e874c007080e58a9c6d2c987d8520a9301347e2b6b5bfad395c144ef4f828a60",
+      "hash_serialization": "UTF-8 JSON, ensure_ascii=False, sort_keys=True, separators=(comma,colon)",
+      "verification": "caption-derived candidates; original video/audio review required before freezing labels",
+      "known_limitations": [
+        "ASR errors in mathematical vocabulary",
+        "overlapping caption segments",
+        "no manual audiovisual transcription verification in this preparation task"
+      ],
+      "distribution": "full captions/video not included"
+    }
+  ],
+  "scopes": [
+    {
+      "scope_id": "PDF_DEV",
+      "split": "development",
+      "source_id": "PDF_TEXT",
+      "pages": [
+        5,
+        11
+      ]
+    },
+    {
+      "scope_id": "YT_DEV",
+      "split": "development",
+      "source_id": "YT_MATH",
+      "seconds": [
+        732,
+        832
+      ]
+    },
+    {
+      "scope_id": "PDF_MODEL",
+      "split": "final_candidate",
+      "source_id": "PDF_TEXT",
+      "pages": [
+        18,
+        23
+      ]
+    },
+    {
+      "scope_id": "PDF_TOPIC",
+      "split": "final_candidate",
+      "source_id": "PDF_TEXT",
+      "pages": [
+        44,
+        59
+      ]
+    },
+    {
+      "scope_id": "YT_CONCEPT",
+      "split": "final_candidate",
+      "source_id": "YT_MATH",
+      "seconds": [
+        1200,
+        1690
+      ]
+    }
+  ],
+  "isolation": "One separate week per scope; do not put development, PDF_MODEL, PDF_TOPIC and YT_CONCEPT materials in the same retrieval pool.",
+  "holdout_notice": "Candidate final questions are visible in the repository. This is an operational holdout only; never supply reviewer files to a generator or tuning agent. Freeze after human approval. No claim of training-data independence."
+}

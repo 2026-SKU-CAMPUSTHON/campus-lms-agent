@@ -121,6 +121,10 @@ YouTube 공개 영상도 **녹음·동영상 → YouTube 강의 연결**에서 �
 
 ## 협업과 검증
 
+[평가 계획](docs/evaluation/README.md) · [평가 세트](evaluation/v1/README.md) · [채점 기준](docs/evaluation/rubric.md) · [Excel 채점표](outputs/evaluation-20261026/campus-evaluation-scorecard.xlsx)
+
+퀴즈 생성 30문항 분량·참고 기준 30개, 최종 Q&A 후보 30개, 개발 Q&A 6개, 기능 검사 12개를 준비했다. 정답은 사람 검토 전 후보이며 영상 확인이 필요하다. 실제 평가 점수는 아직 없다.
+
 [역할별 이슈](https://github.com/2026-sku-campusthon/campus-lms-agent/issues) · [개발 순서](docs/development-plan.md) · [AI 협업 지침](AGENTS.md) · [API 계약](docs/contracts/openapi.yaml) · [검증 기록](docs/verification.md)
 
 ```bash

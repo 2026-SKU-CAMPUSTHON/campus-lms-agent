@@ -30,6 +30,8 @@
 
 ## 검사와 다음 우선순위
 
+[평가 계획](evaluation/README.md)·[세트](../evaluation/v1/README.md)·[채점표](../outputs/evaluation-20261026/campus-evaluation-scorecard.xlsx)를 준비했다. 사람 정답 검토와 원영상 확인부터 진행한다. Q&A 비교 실행기·실제 채점·시간 측정은 아직 남아 있다. 개발/최종 범위를 섞지 않고 원본·키·개인 기록을 공개하지 않는다.
+
 기본 검사는 `npm run typecheck`, `npm test`, `npm run build`, `npm run test:e2e`, `python scripts/check_contracts.py`다. Python 가상 환경에 `worker/requirements.txt`와 `requirements-contracts.txt`를 설치한다. MySQL 검사는 폐기 가능한 `campus_test` DB와 `MYSQL_TEST_URL`을 준비한 뒤 서버 검사와 `npm run test:e2e:mysql`을 실행한다. 운영 DB를 테스트 URL로 사용하지 않는다. CI의 App·Contracts·Container가 실제 MySQL/브라우저/컨테이너 검사를 수행하며 최신 커밋 결과는 GitHub Actions에서 확인한다.
 
 다음 담당은 먼저 팀원의 역할별 리허설 결과를 GitHub 이슈에 모으고 재현되는 오류부터 수정한다. 이후 실제 한국어 강의의 퀴즈 품질·Jev의 모호/근거 부족 경계 사례, 긴 녹음/영상의 처리 시간과 모델 비용을 확인한다. 백업 파일 생성·검사는 완료했지만 복구 훈련과 자동 원격 백업은 남아 있다. 학교 SSO·이메일 인증/비밀번호 재설정, 다중 Worker 자동 복구, OCR·벡터 검색은 후속 범위다. 전체 통합 이슈 #6은 팀원 리허설·최종 제출 확인까지 `in_progress`로 유지한다.
