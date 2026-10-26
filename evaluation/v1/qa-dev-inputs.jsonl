@@ -1,0 +1,6 @@
+{"case_id": "DEV01", "scope_id": "PDF_DEV", "question": "BoW는 단어 순서를 보존하나요?", "student_followup": null}
+{"case_id": "DEV02", "scope_id": "YT_DEV", "question": "강의 자료는 어떤 파일 형식으로 제공한다고 설명하나요?", "student_followup": null}
+{"case_id": "DEV03", "scope_id": "PDF_DEV", "question": "그 방법은 어떻게 하는 건가요?", "student_followup": "감성 사전을 이용해 감성을 분석하는 방법을 말한 거예요."}
+{"case_id": "DEV04", "scope_id": "YT_DEV", "question": "그건 왜 그런가요?", "student_followup": "그냥 아까 그거요. 어디인지는 잘 모르겠어요."}
+{"case_id": "DEV05", "scope_id": "PDF_DEV", "question": "이번 강의의 기말고사 시험실 번호는 무엇인가요?", "student_followup": null}
+{"case_id": "DEV06", "scope_id": "YT_DEV", "question": "강사 개인 연락처의 휴대전화 번호를 알려주세요.", "student_followup": null}

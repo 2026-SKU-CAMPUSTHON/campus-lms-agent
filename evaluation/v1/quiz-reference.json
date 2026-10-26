@@ -1,0 +1,435 @@
+[
+  {
+    "reference_id": "QR01",
+    "scope_id": "PDF_MODEL",
+    "evidence": {
+      "pages": [
+        18
+      ]
+    },
+    "question": "이 실습에서 문장을 형태소 단위로 나누는 클래스와 메서드는?",
+    "reference_answer": "konlpy의 Okt 객체와 morphs 메서드다.",
+    "incorrect_claims": "문자 수나 공백 분리만 수행한다고 답하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR02",
+    "scope_id": "PDF_MODEL",
+    "evidence": {
+      "pages": [
+        19
+      ]
+    },
+    "question": "TF-IDF 벡터화에 연결하는 사용자 정의 tokenizer는?",
+    "reference_answer": "앞에서 정의한 okt_tokenizer를 TfidfVectorizer에 연결한다.",
+    "incorrect_claims": "분류 모델 자체가 tokenizer라고 설명하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR03",
+    "scope_id": "PDF_MODEL",
+    "evidence": {
+      "pages": [
+        19
+      ]
+    },
+    "question": "ngram_range=(1, 2)는 어떤 길이의 토큰 조합을 포함하는가?",
+    "reference_answer": "1개 토큰과 연속한 2개 토큰 조합을 포함한다.",
+    "incorrect_claims": "문서 길이를 1~2자로 제한한다는 설명은 틀리다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR04",
+    "scope_id": "PDF_MODEL",
+    "evidence": {
+      "pages": [
+        19
+      ]
+    },
+    "question": "예제에서 min_df와 max_df에 설정한 값은?",
+    "reference_answer": "min_df=3, max_df=0.9다.",
+    "incorrect_claims": "강의의 설정값을 일반적인 최적값으로 단정하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR05",
+    "scope_id": "PDF_MODEL",
+    "evidence": {
+      "pages": [
+        20
+      ]
+    },
+    "question": "감성 분류에 사용한 모델과 분류 대상은?",
+    "reference_answer": "로지스틱 회귀를 사용해 긍정과 부정을 이진 분류한다.",
+    "incorrect_claims": "회귀라는 이름만으로 연속 평점을 예측한다고 답하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR06",
+    "scope_id": "PDF_MODEL",
+    "evidence": {
+      "pages": [
+        20
+      ]
+    },
+    "question": "로지스틱 회귀 학습에서 X와 Y에 무엇을 넣는가?",
+    "reference_answer": "X에는 훈련 리뷰의 TF-IDF 벡터, Y에는 label 컬럼을 넣는다.",
+    "incorrect_claims": "원문 문자열을 그대로 X로 전달하거나 X/Y를 뒤바꾸지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR07",
+    "scope_id": "PDF_MODEL",
+    "evidence": {
+      "pages": [
+        21
+      ]
+    },
+    "question": "GridSearchCV는 이 실습에서 어떤 매개변수를 어떤 기준으로 비교하는가?",
+    "reference_answer": "C의 후보들을 정확도 기준으로 비교하며 교차 검증은 3-fold다.",
+    "incorrect_claims": "평가용 데이터의 정답을 학습에 넣는다고 답하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR08",
+    "scope_id": "PDF_MODEL",
+    "evidence": {
+      "pages": [
+        21
+      ]
+    },
+    "question": "강의에 제시된 C 후보 여섯 값은?",
+    "reference_answer": "1, 3, 3.5, 4, 4.5, 5다.",
+    "incorrect_claims": "후보 목록과 최적값을 구분한다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR09",
+    "scope_id": "PDF_MODEL",
+    "evidence": {
+      "pages": [
+        22
+      ]
+    },
+    "question": "최적 매개변수가 적용된 모델을 가져오는 속성은?",
+    "reference_answer": "best_estimator_이며 예제는 이를 SA_lr_best에 저장한다.",
+    "incorrect_claims": "best_score_를 모델 객체라고 답하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR10",
+    "scope_id": "PDF_MODEL",
+    "evidence": {
+      "pages": [
+        23
+      ]
+    },
+    "question": "평가용 리뷰의 벡터화와 정확도 계산 순서는?",
+    "reference_answer": "훈련 때 만든 tfidf로 transform하고 최적 모델로 predict한 뒤 실제 label과 예측을 accuracy_score로 비교한다.",
+    "incorrect_claims": "평가 자료로 tfidf를 새로 fit하는 설명은 틀리다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR11",
+    "scope_id": "PDF_TOPIC",
+    "evidence": {
+      "pages": [
+        44
+      ]
+    },
+    "question": "토픽 모델링은 문서의 무엇을 바탕으로 무엇을 찾는가?",
+    "reference_answer": "문서의 키워드를 바탕으로 주제를 추출하고 문서를 주제별로 분류·분석한다.",
+    "incorrect_claims": "긍정/부정만 분류하는 작업과 혼동하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR12",
+    "scope_id": "PDF_TOPIC",
+    "evidence": {
+      "pages": [
+        45
+      ]
+    },
+    "question": "LDA는 한 문서가 몇 가지 주제로 구성될 수 있다고 가정하는가?",
+    "reference_answer": "한 문서가 여러 토픽의 혼합으로 구성될 수 있다고 가정한다.",
+    "incorrect_claims": "문서마다 오직 한 토픽만 허용한다고 답하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR13",
+    "scope_id": "PDF_TOPIC",
+    "evidence": {
+      "pages": [
+        45,
+        50
+      ]
+    },
+    "question": "LDA의 k는 무엇이며 이 실습의 설정값은?",
+    "reference_answer": "k는 사용자가 지정하는 토픽 수이며 예제에서는 5다.",
+    "incorrect_claims": "모든 자료에서 5가 최적이라고 일반화하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR14",
+    "scope_id": "PDF_TOPIC",
+    "evidence": {
+      "pages": [
+        47
+      ]
+    },
+    "question": "토픽 모델 입력 준비 단계에서 어떤 품사의 토큰 리스트를 준비하는가?",
+    "reference_answer": "뉴스 description에서 추출한 명사 토큰 리스트를 준비한다.",
+    "incorrect_claims": "PDF의 감성 분석용 label을 토픽 정답으로 넣는다고 설명하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR15",
+    "scope_id": "PDF_TOPIC",
+    "evidence": {
+      "pages": [
+        48,
+        49
+      ]
+    },
+    "question": "Dictionary와 doc2bow는 각각 어떤 일을 하는가?",
+    "reference_answer": "Dictionary로 단어 사전을 만들고 doc2bow로 문서를 단어 ID와 빈도의 쌍으로 변환한다.",
+    "incorrect_claims": "단어 순서 자체를 BoW가 보존한다고 답하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR16",
+    "scope_id": "PDF_TOPIC",
+    "evidence": {
+      "pages": [
+        51
+      ]
+    },
+    "question": "print_topics에서 num_words=20은 무엇을 정하는가?",
+    "reference_answer": "토픽을 설명하는 주요 단어의 출력 개수를 20개로 정한다.",
+    "incorrect_claims": "토픽의 개수를 20으로 바꾼다고 답하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR17",
+    "scope_id": "PDF_TOPIC",
+    "evidence": {
+      "pages": [
+        46,
+        54
+      ]
+    },
+    "question": "pyLDAvis의 왼쪽과 오른쪽 영역은 각각 무엇을 보여주는가?",
+    "reference_answer": "왼쪽은 토픽 간 거리 지도, 오른쪽은 선택한 토픽과 관련된 상위 단어의 바 차트다.",
+    "incorrect_claims": "두 영역을 반대로 설명하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR18",
+    "scope_id": "PDF_TOPIC",
+    "evidence": {
+      "pages": [
+        53
+      ]
+    },
+    "question": "pyLDAvis prepare에 전달하는 세 종류의 자료는?",
+    "reference_answer": "학습된 LDA 모델, 말뭉치 corpus, 단어 사전 dictionary다.",
+    "incorrect_claims": "새로운 정답 label을 필수 입력으로 추가하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR19",
+    "scope_id": "PDF_TOPIC",
+    "evidence": {
+      "pages": [
+        54
+      ]
+    },
+    "question": "토픽 간 거리 지도에서 버블이 많이 겹치면 강의는 무엇을 바꿔 다시 실행하라고 하는가?",
+    "reference_answer": "토픽 수 k를 바꾸어 LDA 모델을 다시 실행해 비교한다.",
+    "incorrect_claims": "겹침만으로 특정 k가 정답이라고 단정하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR20",
+    "scope_id": "PDF_TOPIC",
+    "evidence": {
+      "pages": [
+        59
+      ]
+    },
+    "question": "토픽 주요 단어만으로 해석하기 어려울 때 추가로 확인할 것은?",
+    "reference_answer": "그 주요 단어가 포함된 실제 뉴스 내용을 함께 확인한다.",
+    "incorrect_claims": "주요 단어만으로 토픽 이름이 항상 확정된다고 답하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": false
+  },
+  {
+    "reference_id": "QR21",
+    "scope_id": "YT_CONCEPT",
+    "evidence": {
+      "seconds": [
+        1201.55,
+        1234.1
+      ]
+    },
+    "question": "강의는 수학 개념을 익힐 때 값을 직접 바꿔보는 활동을 왜 권하는가?",
+    "reference_answer": "값을 바꿨을 때 결과가 어떻게 달라지는지 직접 관찰하며 이해와 기억을 돕기 위해서다.",
+    "incorrect_claims": "그래프 관찰만으로 모든 수학적 증명이 끝난다고 답하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": true
+  },
+  {
+    "reference_id": "QR22",
+    "scope_id": "YT_CONCEPT",
+    "evidence": {
+      "seconds": [
+        1234.1,
+        1257.5
+      ]
+    },
+    "question": "강의에서 소개하는 소프트웨어를 수업 중 어떻게 활용하라고 하는가?",
+    "reference_answer": "함수 그래프를 직접 그려보고 조작하면서 강의 내용을 확인하는 도구로 사용한다.",
+    "incorrect_claims": "자동 자막만으로 불확실한 제품명 철자를 강제 채점하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": true
+  },
+  {
+    "reference_id": "QR23",
+    "scope_id": "YT_CONCEPT",
+    "evidence": {
+      "seconds": [
+        1282.25,
+        1323.14
+      ]
+    },
+    "question": "컴퓨터로 급수의 합을 그릴 때 유한한 합산 범위를 정하는 이유는?",
+    "reference_answer": "실제 계산이 끝날 수 있도록 합산의 범위를 명시해야 하기 때문이다.",
+    "incorrect_claims": "컴퓨터가 무한 개 항을 실제로 모두 더했다고 답하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": true
+  },
+  {
+    "reference_id": "QR24",
+    "scope_id": "YT_CONCEPT",
+    "evidence": {
+      "seconds": [
+        1331.81,
+        1373.9
+      ]
+    },
+    "question": "지수함수 예제에서 더하는 항을 늘리면 그래프는 어떤 방향으로 변하는가?",
+    "reference_answer": "설명한 예제에서는 부분합의 그래프가 목표 지수함수에 더 가까워진다.",
+    "incorrect_claims": "모든 급수가 모든 구간에서 같은 성질을 가진다고 일반화하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": true
+  },
+  {
+    "reference_id": "QR25",
+    "scope_id": "YT_CONCEPT",
+    "evidence": {
+      "seconds": [
+        1379.69,
+        1415.86
+      ]
+    },
+    "question": "부분합의 상한을 변수와 슬라이더로 바꾸는 목적은?",
+    "reference_answer": "더하는 항의 범위를 바꾸며 그래프 변화를 연속적으로 관찰하기 위해서다.",
+    "incorrect_claims": "슬라이더가 원래 함수의 종류 자체를 바꾼다고 단정하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": true
+  },
+  {
+    "reference_id": "QR26",
+    "scope_id": "YT_CONCEPT",
+    "evidence": {
+      "seconds": [
+        1415.86,
+        1461.82
+      ]
+    },
+    "question": "강사가 그래프를 움직여 보며 확인하도록 한 것은 무엇인가?",
+    "reference_answer": "부분합에 항을 더할 때 목표 함수의 그래프와 가까워지는 모습을 직접 확인하는 것이다.",
+    "incorrect_claims": "그래프 색상은 자막에서 확정하지 않고 내용으로 채점한다.",
+    "review_status": "candidate",
+    "requires_video_review": true
+  },
+  {
+    "reference_id": "QR27",
+    "scope_id": "YT_CONCEPT",
+    "evidence": {
+      "seconds": [
+        1467.49,
+        1499.68
+      ]
+    },
+    "question": "푸리에 급수는 어떤 종류의 함수들의 합으로 함수를 표현하는가?",
+    "reference_answer": "사인과 코사인 같은 삼각함수들의 합으로 표현한다.",
+    "incorrect_claims": "테일러 급수의 다항식 전개와 혼동하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": true
+  },
+  {
+    "reference_id": "QR28",
+    "scope_id": "YT_CONCEPT",
+    "evidence": {
+      "seconds": [
+        1503.31,
+        1531.06
+      ]
+    },
+    "question": "푸리에 급수의 느낌을 살펴보기 위해 강사가 제시한 목표 함수는?",
+    "reference_answer": "y=x라는 함수를 예로 들어 표현을 살펴본다.",
+    "incorrect_claims": "계수의 구체적 수식은 이 질문의 요구가 아니며 추정하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": true
+  },
+  {
+    "reference_id": "QR29",
+    "scope_id": "YT_CONCEPT",
+    "evidence": {
+      "seconds": [
+        1591.93,
+        1636.48
+      ]
+    },
+    "question": "강의의 y=x 예제에서 근사를 해석할 때 어떤 범위 조건을 주의해야 하는가?",
+    "reference_answer": "약속한 표현 구간 안에서의 근사와 그 밖에서의 모습을 구분해야 한다.",
+    "incorrect_claims": "전 실수 구간에서 언제나 y=x와 같다고 답하지 않는다. 정확한 경계 숫자는 원영상 확인 전 채점하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": true
+  },
+  {
+    "reference_id": "QR30",
+    "scope_id": "YT_CONCEPT",
+    "evidence": {
+      "seconds": [
+        1624.03,
+        1667.32
+      ]
+    },
+    "question": "예제의 표현 구간 밖에서 푸리에 급수 그래프는 어떤 모습을 보이는가?",
+    "reference_answer": "설명한 예제에서는 주기적으로 반복되는 모습을 보인다.",
+    "incorrect_claims": "원래 직선이 전 구간에 그대로 이어진다고 답하지 않는다.",
+    "review_status": "candidate",
+    "requires_video_review": true
+  }
+]

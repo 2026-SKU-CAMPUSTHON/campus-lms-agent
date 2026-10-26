@@ -1,0 +1,30 @@
+{"case_id": "QA01", "scope_id": "PDF_MODEL", "question": "이 실습은 한국어 문장을 형태소로 나눌 때 어떤 클래스와 메서드를 사용하나요?", "student_followup": null}
+{"case_id": "QA02", "scope_id": "PDF_MODEL", "question": "평가용 리뷰도 TF-IDF를 새로 fit하나요? 강의의 평가용 벡터화 절차를 설명해 주세요.", "student_followup": null}
+{"case_id": "QA03", "scope_id": "PDF_MODEL", "question": "감성 분류 로지스틱 회귀를 학습할 때 X와 Y에는 각각 무엇을 넣나요?", "student_followup": null}
+{"case_id": "QA04", "scope_id": "PDF_MODEL", "question": "GridSearchCV에서 C를 비교할 때 교차 검증 횟수와 성능 기준을 어떻게 정했나요?", "student_followup": null}
+{"case_id": "QA05", "scope_id": "PDF_TOPIC", "question": "LDA는 한 문서가 한 토픽에만 속한다고 가정하나요?", "student_followup": null}
+{"case_id": "QA06", "scope_id": "PDF_TOPIC", "question": "LDA에서 k는 무엇이고 실습에서는 얼마로 설정하나요?", "student_followup": null}
+{"case_id": "QA07", "scope_id": "PDF_TOPIC", "question": "토픽 모델 입력을 만들 때 Dictionary와 doc2bow는 각각 무슨 역할인가요?", "student_followup": null}
+{"case_id": "QA08", "scope_id": "PDF_TOPIC", "question": "pyLDAvis 화면의 왼쪽 지도와 오른쪽 바 차트는 무엇을 뜻하나요?", "student_followup": null}
+{"case_id": "QA09", "scope_id": "YT_CONCEPT", "question": "강의에서 컴퓨터로 급수를 그릴 때 합의 상한을 정하라는 이유가 무엇인가요?", "student_followup": null}
+{"case_id": "QA10", "scope_id": "YT_CONCEPT", "question": "강의에서는 푸리에 급수를 어떤 함수들의 합이라고 설명하나요?", "student_followup": null}
+{"case_id": "QA11", "scope_id": "PDF_MODEL", "question": "이걸 왜 이렇게 나누는 건가요?", "student_followup": "Okt의 morphs로 문장을 나눈다는 부분이에요. 무엇을 기준으로 나누나요?"}
+{"case_id": "QA12", "scope_id": "PDF_MODEL", "question": "이 숫자는 뭘 의미하는 건가요?", "student_followup": "19쪽 ngram_range=(1, 2)의 두 숫자를 말한 거예요."}
+{"case_id": "QA13", "scope_id": "PDF_TOPIC", "question": "개수가 무엇을 뜻하나요?", "student_followup": "LDA에서 사용자가 정하는 k가 무엇을 세는지 궁금해요."}
+{"case_id": "QA14", "scope_id": "PDF_TOPIC", "question": "왼쪽은 무엇을 보여주는 거예요?", "student_followup": "pyLDAvis의 왼쪽 토픽 간 거리 지도를 말한 거예요. 오른쪽과 무엇이 다른가요?"}
+{"case_id": "QA15", "scope_id": "YT_CONCEPT", "question": "이걸 늘리면 왜 달라지는 거죠?", "student_followup": "지수함수 예제에서 부분합에 더하는 항을 늘릴 때 그래프가 어떻게 바뀌는지 묻는 거예요."}
+{"case_id": "QA16", "scope_id": "PDF_MODEL", "question": "저거는 왜 저렇게 하는 거예요?", "student_followup": "그냥 저기 있는 거요. 어떤 부분인지 모르겠어요."}
+{"case_id": "QA17", "scope_id": "PDF_MODEL", "question": "이 값이 맞는 건가요?", "student_followup": "무슨 값인지 잘 모르겠고 그냥 화면에 나온 그 값이요."}
+{"case_id": "QA18", "scope_id": "PDF_TOPIC", "question": "이건 어떤 뜻인가요?", "student_followup": "그 부분이요. 정확히 어떤 용어인지 모르겠어요."}
+{"case_id": "QA19", "scope_id": "YT_CONCEPT", "question": "저것 때문에 이렇게 되는 건가요?", "student_followup": "어느 그래프인지는 모르겠고 아까 본 그거요."}
+{"case_id": "QA20", "scope_id": "YT_CONCEPT", "question": "이걸 바꾸면 되나요?", "student_followup": "무엇을 바꾸는지는 모르겠어요. 그냥 그걸 말한 거예요."}
+{"case_id": "QA21", "scope_id": "PDF_MODEL", "question": "이번 서경대학교 수업의 중간고사 날짜와 강의실을 알려주세요.", "student_followup": null}
+{"case_id": "QA22", "scope_id": "PDF_MODEL", "question": "제가 제출한 이번 과제의 점수가 몇 점인지 알려주세요.", "student_followup": null}
+{"case_id": "QA23", "scope_id": "PDF_MODEL", "question": "강의 실습 데이터로 BERT를 학습하면 정확도가 소수점 셋째 자리까지 얼마인가요?", "student_followup": null}
+{"case_id": "QA24", "scope_id": "PDF_MODEL", "question": "이 감성 모델을 영어 영화 리뷰에 적용한 실험 정확도는 얼마인가요?", "student_followup": null}
+{"case_id": "QA25", "scope_id": "PDF_MODEL", "question": "이 로지스틱 회귀를 학습시킨 컴퓨터의 CPU 모델명과 학습 시간은 얼마인가요?", "student_followup": null}
+{"case_id": "QA26", "scope_id": "PDF_MODEL", "question": "pyLDAvis의 왼쪽 지도와 오른쪽 차트는 무엇을 보여주나요?", "student_followup": null}
+{"case_id": "QA27", "scope_id": "PDF_TOPIC", "question": "이 강의의 LDA 실험에서 k=12일 때 coherence 점수는 얼마인가요?", "student_followup": null}
+{"case_id": "QA28", "scope_id": "PDF_TOPIC", "question": "2026년 10월 26일 현재 최신 pyLDAvis 버전 번호는 무엇인가요?", "student_followup": null}
+{"case_id": "QA29", "scope_id": "YT_CONCEPT", "question": "영상 강사의 이번 학기 오프라인 상담실 호수와 상담 시간표를 알려주세요.", "student_followup": null}
+{"case_id": "QA30", "scope_id": "YT_CONCEPT", "question": "이 공학수학 영상에 따르면 감성 분석에서 GridSearchCV의 C 후보 값은 무엇인가요?", "student_followup": null}
