@@ -30,7 +30,7 @@
 
 ## 검사와 다음 우선순위
 
-[평가 계획](evaluation/README.md)·[세트](../evaluation/v1/README.md)·[채점표](../outputs/evaluation-20261026/campus-evaluation-scorecard.xlsx)를 준비했다. 사람 정답 검토와 원영상 확인부터 진행한다. Q&A 비교 실행기·실제 채점·시간 측정은 아직 남아 있다. 개발/최종 범위를 섞지 않고 원본·키·개인 기록을 공개하지 않는다.
+[평가 계획](evaluation/README.md)·[세트](../evaluation/v1/README.md)·[빈 채점표](../outputs/evaluation-20261026/campus-evaluation-scorecard.xlsx)를 준비했고 [실제 모델 실행과 AI 잠정 채점](evaluation/results-2026-10-26.md)을 완료했다. 퀴즈 30문항·Q&A 30×2조건이며 비교 실행기는 scripts/evaluation에 있다. 다음 담당은 사람 정답 검토·원영상 확인·독립 채점과 기능/시간 실험을 진행한다. 개발/최종 범위를 섞지 않고 원본·키·실제 응답 전문은 공개하지 않는다.
 
 기본 검사는 `npm run typecheck`, `npm test`, `npm run build`, `npm run test:e2e`, `python scripts/check_contracts.py`다. Python 가상 환경에 `worker/requirements.txt`와 `requirements-contracts.txt`를 설치한다. MySQL 검사는 폐기 가능한 `campus_test` DB와 `MYSQL_TEST_URL`을 준비한 뒤 서버 검사와 `npm run test:e2e:mysql`을 실행한다. 운영 DB를 테스트 URL로 사용하지 않는다. CI의 App·Contracts·Container가 실제 MySQL/브라우저/컨테이너 검사를 수행하며 최신 커밋 결과는 GitHub Actions에서 확인한다.
 
