@@ -123,7 +123,7 @@ YouTube 공개 영상도 **녹음·동영상 → YouTube 강의 연결**에서 �
 
 [평가 계획](docs/evaluation/README.md) · [평가 세트](evaluation/v1/README.md) · [채점 기준](docs/evaluation/rubric.md) · [Excel 채점표](outputs/evaluation-20261026/campus-evaluation-scorecard.xlsx)
 
-퀴즈 생성 30문항 분량·참고 기준 30개, 최종 Q&A 후보 30개, 개발 Q&A 6개, 기능 검사 12개를 준비했다. 정답은 사람 검토 전 후보이며 영상 확인이 필요하다. 실제 평가 점수는 아직 없다.
+퀴즈 30문항과 Q&A 30사례 × 2조건을 실제 API로 평가했다. [2026-10-26 결과](docs/evaluation/results-2026-10-26.md): 후보 기대 분기 일치 20/30 → Jev 26/30, 퀴즈 무수정 사용 AI 잠정 27/30. 정답은 사람 검토 전 후보이며 원영상 확인·독립 채점·기능 검사 12개·시간 파일럿은 남아 있다. [실행 방법](scripts/evaluation/README.md)
 
 [역할별 이슈](https://github.com/2026-sku-campusthon/campus-lms-agent/issues) · [개발 순서](docs/development-plan.md) · [AI 협업 지침](AGENTS.md) · [API 계약](docs/contracts/openapi.yaml) · [검증 기록](docs/verification.md)
 

@@ -1,0 +1,202 @@
+{
+  "run_id": "20261026_candidate_live_01",
+  "dataset_version": "1.0.0-candidate",
+  "code_commit": "4950144637576530519591adf1985bf6e7e36670",
+  "runner_sha256": "8682efbcd0e2f60b6b62a024a7ae27421c6abcb0146dbae99816b71796b42c5a",
+  "model": "claude-sonnet-5-5",
+  "jev_model": "jev-1.13.0",
+  "minimum": 0.75,
+  "review_type": "AI provisional; no independent human approval",
+  "human_review_pending": true,
+  "video_audiovisual_review_pending": true,
+  "qa": {
+    "direct_answer": {
+      "attempted": 30,
+      "completed": 30,
+      "api_or_processing_failures": 0,
+      "route_correct": 20,
+      "route_accuracy": 0.6666666666666666,
+      "category_routes": {
+        "answerable": {
+          "correct": 10,
+          "total": 10
+        },
+        "ambiguous": {
+          "correct": 0,
+          "total": 10
+        },
+        "insufficient": {
+          "correct": 10,
+          "total": 10
+        }
+      },
+      "answered": 14,
+      "answer_content_full_correct": 10,
+      "ambiguous_initial_answers": 4,
+      "clarify_then_answer": 0,
+      "answer_content_full_correct_rate": 0.7142857142857143,
+      "initial_answerable_success": 9,
+      "initial_answerable_total": 10,
+      "unnecessary_handoff_initial_answerable": 0,
+      "unsupported_answer_in_ambiguous_or_insufficient": 0,
+      "unsafe_set_total": 20,
+      "clarification_limit_violations": 0,
+      "mean_latency_sec": 2.6494416472333344,
+      "median_latency_sec": 2.614929457999984,
+      "max_latency_sec": 7.301585959000018,
+      "route_counts": {
+        "answer": 14,
+        "handoff": 16
+      },
+      "confusion": {
+        "answer => answer": 10,
+        "clarify>answer => handoff": 2,
+        "clarify>answer => answer": 3,
+        "clarify>handoff => handoff": 4,
+        "clarify>handoff => answer": 1,
+        "handoff => handoff": 10
+      },
+      "api_usage": {
+        "claude": {
+          "calls": 24,
+          "http_errors": 0,
+          "input_tokens": 68125,
+          "output_tokens": 7840,
+          "usage_missing_calls": 0
+        },
+        "jev": {
+          "calls": 0,
+          "http_errors": 0,
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "usage_missing_calls": 0
+        }
+      },
+      "cost_usd": null
+    },
+    "jev_gate": {
+      "attempted": 30,
+      "completed": 30,
+      "api_or_processing_failures": 0,
+      "route_correct": 26,
+      "route_accuracy": 0.8666666666666667,
+      "category_routes": {
+        "answerable": {
+          "correct": 9,
+          "total": 10
+        },
+        "ambiguous": {
+          "correct": 7,
+          "total": 10
+        },
+        "insufficient": {
+          "correct": 10,
+          "total": 10
+        }
+      },
+      "answered": 12,
+      "answer_content_full_correct": 12,
+      "ambiguous_initial_answers": 1,
+      "clarify_then_answer": 2,
+      "answer_content_full_correct_rate": 1.0,
+      "initial_answerable_success": 9,
+      "initial_answerable_total": 10,
+      "unnecessary_handoff_initial_answerable": 1,
+      "unsupported_answer_in_ambiguous_or_insufficient": 0,
+      "unsafe_set_total": 20,
+      "clarification_limit_violations": 0,
+      "mean_latency_sec": 2.4176310458999977,
+      "median_latency_sec": 2.6107009789999864,
+      "max_latency_sec": 9.669820542000002,
+      "route_counts": {
+        "answer": 10,
+        "handoff": 12,
+        "clarify>handoff": 6,
+        "clarify>answer": 2
+      },
+      "confusion": {
+        "answer => answer": 9,
+        "answer => handoff": 1,
+        "clarify>answer => clarify>handoff": 1,
+        "clarify>answer => clarify>answer": 2,
+        "clarify>answer => handoff": 1,
+        "clarify>answer => answer": 1,
+        "clarify>handoff => clarify>handoff": 5,
+        "handoff => handoff": 10
+      },
+      "api_usage": {
+        "claude": {
+          "calls": 20,
+          "http_errors": 0,
+          "input_tokens": 49826,
+          "output_tokens": 5489,
+          "usage_missing_calls": 0
+        },
+        "jev": {
+          "calls": 38,
+          "http_errors": 0,
+          "input_tokens": 72417,
+          "output_tokens": 2749,
+          "usage_missing_calls": 0
+        }
+      },
+      "cost_usd": null
+    }
+  },
+  "paired_initial_retrieval_identical": 30,
+  "paired_route_outcomes": {
+    "direct_1_jev_1": 19,
+    "direct_1_jev_0": 1,
+    "direct_0_jev_0": 3,
+    "direct_0_jev_1": 7
+  },
+  "quiz": {
+    "requested": 30,
+    "generated": 30,
+    "unchanged_pass": 27,
+    "by_scope": {
+      "PDF_MODEL": {
+        "generated": 10,
+        "unchanged_pass": 8,
+        "generation_sec": 25.523595917
+      },
+      "PDF_TOPIC": {
+        "generated": 10,
+        "unchanged_pass": 10,
+        "generation_sec": 21.011504208999998
+      },
+      "YT_CONCEPT": {
+        "generated": 10,
+        "unchanged_pass": 9,
+        "generation_sec": 44.52190000000001
+      }
+    },
+    "answer_position_counts": {
+      "a": 19,
+      "b": 9,
+      "d": 2
+    }
+  },
+  "usage_all_including_dev_and_quiz": {
+    "claude": {
+      "calls": 58,
+      "http_errors": 0,
+      "input_tokens": 165960,
+      "output_tokens": 27882,
+      "usage_missing_calls": 0
+    },
+    "jev": {
+      "calls": 46,
+      "http_errors": 0,
+      "input_tokens": 84339,
+      "output_tokens": 3328,
+      "usage_missing_calls": 0
+    }
+  },
+  "cost_usd": null,
+  "functional_cases_executed": false,
+  "human_time_study_executed": false,
+  "provisional_grades_sha256": "c9e51851f49220e4673397517f0413a99258bbd0b27643bd646d35c3465f4b37",
+  "qa_final_inputs_sha256": "15b0a52af19a7e2a82cfc6235363cfe8b9e5adc56ee51dee5d6acff5949e17e4",
+  "qa_final_reviewer_sha256": "e4e0539721d8554fa22d5b12d80d1e56e660d72b77cae4029e15149180aa53c7"
+}
